@@ -43,7 +43,7 @@ scripts/check_links.py   Kiểm tra link trước khi nộp
 2. Điền `summary`, `problem`, `dataset`, `results`; đổi `status` (`planned` → `in-progress` → `done`).
 3. Thêm link: `links.notebook = "notebooks/tabular.ipynb"`, `links.report = "reports/tabular-report.pdf"`, `links.video = "https://youtu.be/..."`.
    Link để `null` sẽ hiển thị "Sắp cập nhật".
-4. Đổi `lastUpdated`, commit và push — GitHub Pages tự cập nhật sau 1–2 phút.
+4. Commit và push — GitHub Pages tự cập nhật sau 1–2 phút.
 
 ## Chạy thử local
 

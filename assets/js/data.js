@@ -107,7 +107,5 @@ window.SITE_DATA = {
       links: { notebook: null, report: null, video: null },
       results: []
     }
-  ],
-
-  lastUpdated: "2026-10-09"
+  ]
 };

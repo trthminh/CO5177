@@ -12,8 +12,8 @@
   --page-mid: #e3f0fc;
   --page-bottom: #f1f7fe;
   --cloud: rgba(255, 255, 255, .85);
-  --glass: rgba(255, 255, 255, .62);
-  --glass-strong: rgba(255, 255, 255, .8);
+  --glass: rgba(255, 255, 255, .7);
+  --glass-strong: rgba(255, 255, 255, .85);
   --glass-border: rgba(255, 255, 255, .75);
   --glass-shadow: 0 8px 32px rgba(14, 70, 140, .12);
   --bg: #eaf4fd;
@@ -59,8 +59,10 @@ body::before {
     linear-gradient(180deg, var(--page-top) 0%, var(--page-mid) 50%, var(--page-bottom) 100%);
 }
 
-/* ----- Thẻ kính mờ ----- */
-.site-header,
+/* ----- Thẻ kính mờ -----
+   Chỉ header dùng backdrop-filter thật (nó nằm trên nội dung đang cuộn).
+   Các thẻ khác nằm trên nền trời gần như đồng màu, nên nền trắng bán trong suốt
+   cho cùng hiệu ứng mà không tốn chi phí làm mờ mỗi khung hình. */
 .stats,
 .info-row,
 .table-wrap,
@@ -68,20 +70,18 @@ body::before {
 .side-card,
 .pager-link,
 .btn:not(.btn-primary),
-.lang-toggle,
-.site-footer {
+.lang-toggle {
   background: var(--glass);
   border-color: var(--glass-border);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  backdrop-filter: blur(16px) saturate(150%);
+}
+.site-header {
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  backdrop-filter: blur(14px) saturate(150%);
 }
 .stats, .project-card, .table-wrap, .side-card { box-shadow: var(--glass-shadow); }
 .site-header { background: var(--glass-strong); border-bottom-color: var(--glass-border); }
 /* Footer trong suốt để nền trời chạy tới tận cuối trang */
-.site-footer {
-  background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
-  border-top-color: var(--border); margin-top: 24px;
-}
+.site-footer { background: transparent; border-top-color: var(--border); margin-top: 24px; }
 .section-alt { background: transparent; }
 th { background: var(--surface-alt); }
 .project-card:hover, .info-row:hover { background: var(--glass-strong); }
@@ -109,10 +109,7 @@ th { background: var(--surface-alt); }
 .hero h1, .hero-lead, .hero-group, .eyebrow { text-shadow: 0 1px 12px rgba(6, 40, 100, .35); }
 .hero-glow { background: radial-gradient(circle, rgba(255, 255, 255, .35), transparent 65%); }
 .hero .btn-primary { color: var(--sky-1); }
-.hero .btn-ghost {
-  background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .6);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-}
+.hero .btn-ghost { background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .6); }
 
 /* ----- Đầu trang bài con: cùng tông trời, pha màu của bài ----- */
 .page-head {

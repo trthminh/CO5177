@@ -96,11 +96,5 @@ window.I18N_STRINGS = {
   step4d: {
     vi: "Đánh giá bằng metric, biểu đồ, confusion matrix; nêu nhận xét, hạn chế và hướng mở rộng.",
     en: "Evaluate with metrics, charts and confusion matrices; discuss findings, limitations and extensions."
-  },
-
-  lastUpdated: { vi: "Cập nhật lần cuối", en: "Last updated" },
-  footerNote: {
-    vi: "Bài tập lớn môn học — chỉ phục vụ mục đích học tập.",
-    en: "Course project — for educational purposes only."
   }
 };

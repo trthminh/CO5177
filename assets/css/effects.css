@@ -29,12 +29,16 @@ a.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 92, 1
 a.btn:active { transform: translateY(0); }
 a.btn .icon:last-child { transition: transform .25s; }
 a.btn:hover .icon:last-child { transform: translateX(3px); }
+/* Chỉ animate transform (chạy trên GPU), không animate left để tránh tính lại layout mỗi khung hình */
 .shine::after {
-  content: ""; position: absolute; top: 0; bottom: 0; left: -60%; width: 40%; z-index: -1;
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; z-index: -1;
   background: linear-gradient(110deg, transparent, rgba(20, 136, 216, .35), transparent);
-  transform: skewX(-20deg); animation: shine 3.6s ease-in-out infinite;
+  transform: translateX(-150%) skewX(-20deg); animation: shine 3.6s ease-in-out infinite;
 }
-@keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@keyframes shine {
+  0%, 60% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(330%) skewX(-20deg); }
+}
 .ripple {
   position: absolute; border-radius: 50%; pointer-events: none; z-index: -1;
   background: currentColor; opacity: .25; transform: scale(0);
@@ -54,8 +58,8 @@ a.btn:hover .icon:last-child { transform: translateX(3px); }
 .hero-canvas { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
 .hero-glow {
   position: absolute; z-index: -1; width: 520px; height: 520px; border-radius: 50%;
-  right: -120px; top: -160px; filter: blur(40px); pointer-events: none;
-  background: radial-gradient(circle, rgba(124, 196, 255, .45), transparent 65%);
+  right: -120px; top: -160px; pointer-events: none; will-change: transform;
+  background: radial-gradient(circle, rgba(124, 196, 255, .45), transparent 70%);
   animation: glow-drift 14s ease-in-out infinite alternate;
 }
 @keyframes glow-drift { to { transform: translate(-180px, 140px) scale(1.2); } }
@@ -256,13 +260,18 @@ body[data-project="timeseries"] { --accent: var(--c-timeseries); }
 .block.in h2::after, html:not(.js-anim) .block h2::after { transform: scaleX(1); }
 .step-num { background: var(--accent, var(--primary)); }
 
-/* Timeline tự vẽ theo cuộn */
-.timeline { position: relative; --progress: 0; }
-.timeline::before, .timeline::after {
-  content: ""; position: absolute; left: 15px; top: 16px; bottom: 16px; width: 2px; border-radius: 2px;
+/* Timeline: mỗi bước có một đoạn nối tới bước sau, nằm DƯỚI vòng số và tự vẽ khi bước hiện ra */
+.timeline li { position: relative; }
+.timeline li:not(:last-child)::before,
+.timeline li:not(:last-child)::after {
+  content: ""; position: absolute; left: 15px; top: 36px; bottom: -10px; width: 2px; border-radius: 2px;
 }
-.timeline::before { background: var(--border); }
-.timeline::after { background: var(--accent, var(--primary)); transform: scaleY(var(--progress)); transform-origin: top; }
+.timeline li:not(:last-child)::before { background: var(--border); }
+.timeline li:not(:last-child)::after {
+  background: var(--accent, var(--primary)); transform: scaleY(0); transform-origin: top;
+  transition: transform .6s .35s ease-out;
+}
+.timeline li.in::after, html:not(.js-anim) .timeline li::after { transform: scaleY(1); }
 .timeline .step-num { position: relative; z-index: 1; transition: transform .3s, box-shadow .3s; }
 .timeline li:hover .step-num { transform: scale(1.15); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent, var(--primary)) 20%, transparent); }
 

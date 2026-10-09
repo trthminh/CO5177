@@ -183,7 +183,6 @@
       '<div class="container footer-inner">' +
         "<p><strong>" + esc(D.group.name) + "</strong> · " + esc(tr(D.course.name)) + " (" + esc(D.course.code) + ")</p>" +
         "<p>" + esc(tr(D.course.university)) + " · " + esc(tr(D.course.semester)) + "</p>" +
-        '<p class="muted">' + esc(s("footerNote")) + " " + esc(s("lastUpdated")) + ": " + esc(D.lastUpdated) + "</p>" +
       "</div>"
     );
   }

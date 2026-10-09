@@ -75,17 +75,14 @@
     if (header) header.classList.toggle("scrolled", y > 12);
     if (bar) bar.style.transform = "scaleX(" + (max > 0 ? y / max : 0) + ")";
     if (backTop) backTop.classList.toggle("show", y > 600);
-    updateTimeline();
   }
 
-  /* ---------- Đường timeline tự vẽ theo cuộn (trang bài con) ---------- */
-  function updateTimeline() {
-    var tl = document.querySelector(".timeline");
-    if (!tl) return;
-    var r = tl.getBoundingClientRect();
-    var vh = window.innerHeight;
-    var k = (vh * 0.75 - r.top) / r.height;
-    tl.style.setProperty("--progress", Math.max(0, Math.min(1, k)).toFixed(3));
+  // Gộp các sự kiện cuộn vào tối đa 1 lần cập nhật mỗi khung hình.
+  var scrollQueued = false;
+  function queueScroll() {
+    if (scrollQueued) return;
+    scrollQueued = true;
+    requestAnimationFrame(function () { scrollQueued = false; onScroll(); });
   }
 
   /* ---------- Thẻ nghiêng 3D + vệt sáng theo chuột ---------- */
@@ -152,15 +149,17 @@
     if (!ctx) return function () {};
     var host = canvas.parentElement;
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var W = 0, H = 0, pts = [], raf = 0, visible = true;
+    var W = 0, H = 0, pts = [], raf = 0, visible = true, last = 0;
     var mouse = { x: -9999, y: -9999 };
+    var FRAME_MS = 1000 / 30; // 30 khung/giây là đủ mượt cho chuyển động chậm, giảm một nửa tải CPU
 
     function resize() {
       W = host.clientWidth; H = host.clientHeight;
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.width = W + "px"; canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      var n = Math.round(Math.min(90, (W * H) / 14000));
+      // Số cặp điểm cần kiểm tra tăng theo bình phương số điểm, nên giới hạn chặt.
+      var n = Math.round(Math.min(45, (W * H) / 22000));
       pts = [];
       for (var k = 0; k < n; k++) {
         pts.push({
@@ -174,7 +173,8 @@
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      var link = 130;
+      var link = 130, link2 = link * link;
+      ctx.lineWidth = 1;
       for (var a = 0; a < pts.length; a++) {
         var p = pts[a];
         if (!reduceMotion) {
@@ -185,21 +185,32 @@
           if (md < 140 && md > 0) { p.x += (mdx / md) * 0.9; p.y += (mdy / md) * 0.9; }
         }
         for (var b = a + 1; b < pts.length; b++) {
-          var q = pts[b], dx = p.x - q.x, dy = p.y - q.y, d = Math.sqrt(dx * dx + dy * dy);
-          if (d < link) {
-            ctx.strokeStyle = "rgba(255,255,255," + (0.22 * (1 - d / link)).toFixed(3) + ")";
-            ctx.lineWidth = 1;
+          var q = pts[b], dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy;
+          if (d2 < link2) { // so sánh bình phương khoảng cách, chỉ lấy căn khi thật sự vẽ
+            ctx.strokeStyle = "rgba(255,255,255," + (0.22 * (1 - Math.sqrt(d2) / link)).toFixed(3) + ")";
             ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
           }
         }
-        ctx.fillStyle = "rgba(255,255,255,0.75)";
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
       }
+      // Vẽ tất cả chấm trong một path duy nhất
+      ctx.fillStyle = "rgba(255,255,255,0.75)";
+      ctx.beginPath();
+      for (var c = 0; c < pts.length; c++) {
+        ctx.moveTo(pts[c].x + pts[c].r, pts[c].y);
+        ctx.arc(pts[c].x, pts[c].y, pts[c].r, 0, Math.PI * 2);
+      }
+      ctx.fill();
     }
 
-    function loop() {
-      if (visible) draw();
+    function loop(t) {
+      raf = 0;
+      if (!visible || document.hidden) return; // dừng hẳn khi khuất màn hình / tab ẩn
+      if (t - last >= FRAME_MS) { last = t; draw(); }
       raf = requestAnimationFrame(loop);
+    }
+
+    function start() {
+      if (!raf && !reduceMotion && visible && !document.hidden) raf = requestAnimationFrame(loop);
     }
 
     function onMove(e) {
@@ -208,20 +219,32 @@
     }
     function onLeave() { mouse.x = mouse.y = -9999; }
 
+    var resizeTimer = 0;
+    function onResize() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resize, 150);
+    }
+
     resize();
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", onResize);
+    document.addEventListener("visibilitychange", start);
     host.addEventListener("pointermove", onMove);
     host.addEventListener("pointerleave", onLeave);
     var io = null;
     if ("IntersectionObserver" in window) {
-      io = new IntersectionObserver(function (en) { visible = en[0].isIntersecting; });
+      io = new IntersectionObserver(function (en) { visible = en[0].isIntersecting; start(); });
       io.observe(host);
     }
-    if (!reduceMotion) raf = requestAnimationFrame(loop);
+    start();
 
     return function stop() {
       cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
+      raf = 0;
+      clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", start);
+      host.removeEventListener("pointermove", onMove);
+      host.removeEventListener("pointerleave", onLeave);
       if (io) io.disconnect();
     };
   }
@@ -245,8 +268,8 @@
     initCanvases();
     if (!bound) {
       bound = true;
-      window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", onScroll);
+      window.addEventListener("scroll", queueScroll, { passive: true });
+      window.addEventListener("resize", queueScroll);
       initRipple();
     }
     onScroll();
