@@ -1,0 +1,129 @@
+/* =====================================================================
+   THEME HCMUT — nền trời xanh + mây, thẻ kính mờ (glassmorphism)
+   theo giao diện cổng thông tin của trường. Nạp SAU style.css / effects.css.
+   ===================================================================== */
+
+:root {
+  --primary: #1a6ee0;
+  --sky-1: #0e66c4;
+  --sky-2: #1f8ae3;
+  --sky-3: #62b4f0;
+  --page-top: #cfe5fa;
+  --page-mid: #e3f0fc;
+  --page-bottom: #f1f7fe;
+  --cloud: rgba(255, 255, 255, .85);
+  --glass: rgba(255, 255, 255, .62);
+  --glass-strong: rgba(255, 255, 255, .8);
+  --glass-border: rgba(255, 255, 255, .75);
+  --glass-shadow: 0 8px 32px rgba(14, 70, 140, .12);
+  --bg: #eaf4fd;
+  --surface-alt: rgba(232, 242, 253, .7);
+  --border: rgba(170, 196, 226, .55);
+  --st-done-bg: #effbe6;      --st-done-fg: #3b7f1a;
+  --st-progress-bg: #fff6df;  --st-progress-fg: #8a5a00;
+  --radius: 18px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #6cb2f5;
+    --sky-1: #06234f;
+    --sky-2: #0b3f7f;
+    --sky-3: #1662a8;
+    --page-top: #0c2242;
+    --page-mid: #0b1a30;
+    --page-bottom: #0a1322;
+    --cloud: rgba(120, 170, 230, .12);
+    --glass: rgba(20, 32, 50, .62);
+    --glass-strong: rgba(24, 38, 60, .82);
+    --glass-border: rgba(140, 180, 230, .16);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, .35);
+    --bg: #0b1626;
+    --surface-alt: rgba(18, 30, 48, .6);
+    --border: rgba(120, 150, 190, .22);
+    --st-done-bg: #15361f;      --st-done-fg: #8fe0a0;
+  }
+}
+
+/* ----- Nền trang: MỘT dải trời liền mạch trải theo chiều dài trang -----
+   Hero kết thúc đúng màu --page-top nên không có đường nối giữa hero và phần dưới. */
+html { background: var(--page-bottom); }
+body { position: relative; background: transparent; }
+body::before {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    radial-gradient(ellipse 40% 6% at 6% 34%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 34% 5% at 96% 52%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 42% 6% at 4% 74%, var(--cloud), transparent 70%),
+    radial-gradient(ellipse 36% 6% at 94% 92%, var(--cloud), transparent 70%),
+    linear-gradient(180deg, var(--page-top) 0%, var(--page-mid) 50%, var(--page-bottom) 100%);
+}
+
+/* ----- Thẻ kính mờ ----- */
+.site-header,
+.stats,
+.info-row,
+.table-wrap,
+.project-card,
+.side-card,
+.pager-link,
+.btn:not(.btn-primary),
+.lang-toggle,
+.site-footer {
+  background: var(--glass);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+.stats, .project-card, .table-wrap, .side-card { box-shadow: var(--glass-shadow); }
+.site-header { background: var(--glass-strong); border-bottom-color: var(--glass-border); }
+/* Footer trong suốt để nền trời chạy tới tận cuối trang */
+.site-footer {
+  background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none;
+  border-top-color: var(--border); margin-top: 24px;
+}
+.section-alt { background: transparent; }
+th { background: var(--surface-alt); }
+.project-card:hover, .info-row:hover { background: var(--glass-strong); }
+
+/* Nav kiểu tab: chữ xanh, gạch chân xanh */
+.nav a:hover { background: transparent; color: var(--primary); }
+
+/* Nhãn trạng thái kiểu "Đã xác nhận" */
+.status { border-radius: 6px; font-weight: 500; }
+
+/* ----- Hero: bầu trời xanh với mây ở chân ----- */
+.hero {
+  background: linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 48%, var(--sky-3) 76%, var(--page-top) 100%);
+  animation: none;
+}
+.scroll-hint { border-color: color-mix(in srgb, var(--sky-2) 60%, transparent); }
+.scroll-hint span { background: var(--sky-2); }
+.hero::after {
+  content: ""; position: absolute; inset: auto 0 0 0; height: 45%; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 30% 55% at 6% 100%, rgba(255, 255, 255, .55), transparent 70%),
+    radial-gradient(ellipse 22% 40% at 30% 105%, rgba(255, 255, 255, .35), transparent 70%),
+    radial-gradient(ellipse 28% 50% at 95% 100%, rgba(255, 255, 255, .5), transparent 70%);
+}
+.hero h1, .hero-lead, .hero-group, .eyebrow { text-shadow: 0 1px 12px rgba(6, 40, 100, .35); }
+.hero-glow { background: radial-gradient(circle, rgba(255, 255, 255, .35), transparent 65%); }
+.hero .btn-primary { color: var(--sky-1); }
+.hero .btn-ghost {
+  background: rgba(255, 255, 255, .14); border-color: rgba(255, 255, 255, .6);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
+
+/* ----- Đầu trang bài con: cùng tông trời, pha màu của bài ----- */
+.page-head {
+  background: linear-gradient(180deg, var(--sky-1) 0%, color-mix(in srgb, var(--accent) 30%, var(--sky-2)) 55%,
+    color-mix(in srgb, var(--accent) 12%, var(--sky-3)) 82%, var(--page-top) 100%);
+  animation: none;
+  padding-bottom: 72px;
+}
+.page-head h1, .page-head .breadcrumb { text-shadow: 0 1px 12px rgba(6, 40, 100, .35); }
+
+@media (prefers-color-scheme: dark) {
+  .hero .btn-primary { color: #06234f; }
+  .hero::after { opacity: .25; }
+}
