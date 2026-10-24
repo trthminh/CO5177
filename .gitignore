@@ -5,3 +5,16 @@ data/
 __pycache__/
 .ipynb_checkpoints/
 .venv/
+
+# LaTeX: file trung gian khi biên dịch latex/ (PDF nộp đặt ở reports/)
+latex/**/build/
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.fls
+*.fdb_latexmk
+*.xdv
+*.synctex.gz

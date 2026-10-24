@@ -1,0 +1,73 @@
+\chapter{Tabular Data Analysis}
+\label{chap:tabular}
+% Tabular chapter, owner: Trần Lê Hoàng Long
+
+\section{Problem and Objectives}
+\textbf{Problem:} [Classification or regression task and its real-world goal.]
+
+\section{Dataset}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Name: [Fill in]
+    \item Source and URL: [Fill in]
+    \item Rows / columns: [Fill in]
+    \item Target: [Fill in]
+    \item Categorical / numerical columns: [Fill in]
+    \item Missing values: [Count, ratio and affected columns]
+    \item License / citation: [Fill in]
+\end{itemize}
+
+\section{Exploratory Data Analysis}
+% Numeric distributions, categorical frequencies, correlation heatmap, missing-value chart
+[Key findings; save figures to figures/.]
+
+\section{Data Preprocessing}
+\subsection{Data Quality Checks}
+[Duplicates, wrong dtypes, invalid values, missing values.]
+
+\subsection{Comparing Missing-Value Strategies}
+[Drop rows, mean/median, mode or KNNImputer; selection criterion.]
+
+\subsection{Outlier Handling}
+[IQR or z-score; before vs after.]
+
+\subsection{Encoding and Scaling}
+[One-Hot/Ordinal encoding; StandardScaler/MinMaxScaler/RobustScaler.]
+
+\subsection{Pipeline and Data Leakage Prevention}
+[Train/validation/test split, Pipeline and ColumnTransformer.]
+
+\section{Models and Experimental Setup}
+[Baseline, Logistic Regression/Decision Tree/Random Forest or other suitable models,
+data split and tuning on validation.]
+
+\section{Results and Evaluation}
+% Imbalanced data: also report F1, recall, ROC-AUC
+\begin{table}[H]
+\centering
+\caption{Comparison of tabular models}
+\begin{tabular}{lrrrr}
+\toprule
+Model & Accuracy & Precision & Recall & F1-score\\
+\midrule
+Baseline & -- & -- & -- & --\\
+Model 2 & -- & -- & -- & --\\
+Best model & -- & -- & -- & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Question-Driven Figure}
+\textbf{Question:} [E.g. Does handling class imbalance improve minority-class recall?]
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular_creative.png}{Chart with numbers to compare.}
+\caption{[State the conclusion with numbers matching the notebook.]}
+\label{fig:tabular-creative}
+\end{figure}
+
+\section{Limitations and Future Work}
+[Dataset limits, bias risks, model limitations, possible extensions.]
+
+\section{References}
+[Dataset source, model documentation and other sources used.]

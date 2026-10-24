@@ -1,0 +1,24 @@
+% !TEX program = xelatex
+\documentclass[12pt,a4paper,oneside]{report}
+
+\input{preamble}
+
+\renewcommand{\reporttype}{FINAL REPORT}
+\renewcommand{\reportsubtitle}{DataInsight -- Analysing Diverse Data Types}
+\renewcommand{\datafamily}{Text -- Tabular -- Time Series}
+
+\begin{document}
+\input{cover}
+\pagenumbering{roman}
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+\pagenumbering{arabic}
+
+% One chapter per member, see chapters/
+\input{chapters/text}
+\input{chapters/tabular}
+\input{chapters/timeseries}
+
+\end{document}

@@ -1,0 +1,66 @@
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+% Load by file name so MiKTeX/Overleaf can find (and auto-install) tex-gyre
+\setmainfont{texgyretermes}[
+    Extension      = .otf,
+    UprightFont    = *-regular,
+    BoldFont       = *-bold,
+    ItalicFont     = *-italic,
+    BoldItalicFont = *-bolditalic
+]
+
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{float}
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{hyperref}
+\usepackage{url}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!50!black,
+    pdftitle={DataInsight Report},
+    pdfauthor={DataInsight Group}
+}
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{0.25em}
+\renewcommand{\arraystretch}{1.2}
+
+% Path from the compiled file to latex/: empty for main.tex, "../" for standalone/
+\providecommand{\reportroot}{}
+\graphicspath{{\reportroot figures/}}
+
+% Group info, keep in sync with assets/js/data.js
+\newcommand{\schoolname}{HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY -- VNU-HCM}
+\newcommand{\facultyname}{FACULTY OF COMPUTER SCIENCE AND ENGINEERING}
+\newcommand{\coursecode}{CO5177}
+\newcommand{\coursename}{Programming Foundations for Data Analysis and Visualization}
+\newcommand{\semester}{Semester 261, Academic Year 2026--2027}
+\newcommand{\groupname}{DataInsight}
+\newcommand{\members}{%
+    Trương Thanh Minh & 2580893 & Time series\\
+    Tô Anh Phát & 2580894 & Text\\
+    Trần Lê Hoàng Long & 2570443 & Tabular\\
+}
+\newcommand{\lecturer}{Lê Thành Sách}
+\newcommand{\landingpage}{https://trthminh.github.io/CO5177/}
+\newcommand{\reporttype}{REPORT}
+\newcommand{\reportsubtitle}{Project title}
+\newcommand{\datafamily}{Data type}
+\newcommand{\reportdate}{Ho Chi Minh City, October 2026}
+
+% Shows a placeholder box until the figure exists in figures/
+\newcommand{\figureplaceholder}[2]{%
+  \IfFileExists{\reportroot figures/#1}{\includegraphics[width=0.92\textwidth]{#1}}%
+  {\fbox{\parbox[c][4cm][c]{0.88\textwidth}{\centering Insert figure at \texttt{figures/#1}\\#2}}}%
+}
