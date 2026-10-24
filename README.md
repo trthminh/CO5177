@@ -27,7 +27,6 @@ Trường Đại học Bách Khoa – ĐHQG-HCM · Học kỳ 261, năm học 20
 index.html               Landing page
 tabular/ text/ timeseries/   Trang từng bài con (dùng chung template)
 assets/js/data.js        ★ Toàn bộ thông tin nhóm, bài con, link — chỉ cần sửa file này
-assets/js/i18n.js        Chuỗi giao diện song ngữ Việt–Anh
 assets/js/render.js      Render trang từ data.js
 assets/js/effects.js     Hiệu ứng: hiện dần khi cuộn, số đếm, canvas hero, thẻ nghiêng 3D...
 assets/css/style.css     Giao diện
@@ -42,9 +41,9 @@ scripts/check_links.py   Kiểm tra link trước khi nộp
 1. Mở `assets/js/data.js`, tìm bài cần sửa trong `projects`.
 2. Điền `summary`, `problem`, `dataset`, `results`; đổi `status` (`planned` → `in-progress` → `done`).
 3. Thêm link: `links.notebook = "notebooks/tabular.ipynb"`, `links.report = "reports/tabular-report.pdf"`, `links.video = "https://youtu.be/..."`.
-   Link để `null` sẽ hiển thị "Sắp cập nhật".
+   Link để `null` sẽ hiển thị "Coming soon".
 4. Nếu có sửa file trong `assets/css` hoặc `assets/js`: tăng số `?v=` trong 4 file `index.html`
-   (vd `?v=3` → `?v=4`) để trình duyệt tải bản mới thay vì dùng bản cache cũ.
+   (vd `?v=4` → `?v=5`) để trình duyệt tải bản mới thay vì dùng bản cache cũ.
 5. Commit và push — GitHub Pages tự cập nhật sau 1–2 phút.
 
 ## Chạy thử local

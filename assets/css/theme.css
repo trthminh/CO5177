@@ -13,7 +13,7 @@
   --page-bottom: #f1f7fe;
   --cloud: rgba(255, 255, 255, .85);
   --glass: rgba(255, 255, 255, .7);
-  --glass-strong: rgba(255, 255, 255, .85);
+  --glass-strong: rgba(255, 255, 255, .94);
   --glass-border: rgba(255, 255, 255, .75);
   --glass-shadow: 0 8px 32px rgba(14, 70, 140, .12);
   --bg: #eaf4fd;
@@ -35,7 +35,7 @@
     --page-bottom: #0a1322;
     --cloud: rgba(120, 170, 230, .12);
     --glass: rgba(20, 32, 50, .62);
-    --glass-strong: rgba(24, 38, 60, .82);
+    --glass-strong: rgba(18, 30, 50, .95);
     --glass-border: rgba(140, 180, 230, .16);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, .35);
     --bg: #0b1626;
@@ -60,23 +60,17 @@ body::before {
 }
 
 /* ----- Thẻ kính mờ -----
-   Chỉ header dùng backdrop-filter thật (nó nằm trên nội dung đang cuộn).
-   Các thẻ khác nằm trên nền trời gần như đồng màu, nên nền trắng bán trong suốt
-   cho cùng hiệu ứng mà không tốn chi phí làm mờ mỗi khung hình. */
+   Không dùng backdrop-filter (kể cả header): làm mờ phần nội dung phía sau mỗi khung hình
+   khi cuộn là nguyên nhân chính gây giật. Nền trắng gần đặc cho cảm giác tương tự. */
 .stats,
 .info-row,
 .table-wrap,
 .project-card,
 .side-card,
 .pager-link,
-.btn:not(.btn-primary),
-.lang-toggle {
+.btn:not(.btn-primary) {
   background: var(--glass);
   border-color: var(--glass-border);
-}
-.site-header {
-  -webkit-backdrop-filter: blur(14px) saturate(150%);
-  backdrop-filter: blur(14px) saturate(150%);
 }
 .stats, .project-card, .table-wrap, .side-card { box-shadow: var(--glass-shadow); }
 .site-header { background: var(--glass-strong); border-bottom-color: var(--glass-border); }
