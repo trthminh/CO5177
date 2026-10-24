@@ -32,6 +32,7 @@ assets/js/effects.js     Hiệu ứng: hiện dần khi cuộn, số đếm, can
 assets/css/style.css     Giao diện
 assets/css/effects.css   Hiệu ứng chuyển động (tự tắt khi bật "giảm chuyển động")
 notebooks/               File .ipynb (link GitHub + Colab tạo tự động)
+notebooks/templates/     Template notebook cho từng loại dữ liệu + quy chuẩn chung (đọc README.md trong đó)
 reports/                 PDF report từng bài
 scripts/check_links.py   Kiểm tra link trước khi nộp
 ```
