@@ -9,9 +9,9 @@ Trường Đại học Bách Khoa – ĐHQG-HCM · Học kỳ 261, năm học 20
 
 | Họ tên | MSSV | Phụ trách |
 |---|---|---|
-| Trương Thanh Minh | 2580893 | Text |
-| Tô Anh Phát | 2580894 | Tabular |
-| Trần Lê Hoàng Long | 2570443 | Time series |
+| Trương Thanh Minh | 2580893 | Time series |
+| Tô Anh Phát | 2580894 | Text |
+| Trần Lê Hoàng Long | 2570443 | Tabular |
 
 ## Các bài tập lớn con
 
