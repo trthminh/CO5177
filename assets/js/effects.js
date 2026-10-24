@@ -67,15 +67,20 @@
     document.body.appendChild(backTop);
   }
 
+  // Khi cuộn chỉ đọc scrollY; chiều cao trang đo lại khi resize/tải xong để không ép tính layout mỗi khung hình.
+  var header = null, bar = null, maxScroll = 0, isScrolled = null, isShown = null;
+  function measure() {
+    maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  }
+
   function onScroll() {
     var y = window.scrollY;
-    var max = document.documentElement.scrollHeight - window.innerHeight;
-    var header = document.querySelector(".site-header");
-    var bar = document.getElementById("scroll-progress");
-    if (header) header.classList.toggle("scrolled", y > 12);
-    if (bar) bar.style.transform = "scaleX(" + (max > 0 ? y / max : 0) + ")";
-    if (backTop) backTop.classList.toggle("show", y > 600);
+    var scrolled = y > 12, shown = y > 600;
+    if (header && scrolled !== isScrolled) { isScrolled = scrolled; header.classList.toggle("scrolled", scrolled); }
+    if (backTop && shown !== isShown) { isShown = shown; backTop.classList.toggle("show", shown); }
+    if (bar) bar.style.transform = "scaleX(" + (maxScroll > 0 ? Math.min(y / maxScroll, 1) : 0) + ")";
   }
+  function onResizeScroll() { measure(); queueScroll(); }
 
   // Gộp các sự kiện cuộn vào tối đa 1 lần cập nhật mỗi khung hình.
   var scrollQueued = false;
@@ -89,16 +94,27 @@
   function initTilt() {
     if (reduceMotion || !finePointer) return;
     document.querySelectorAll(".tilt").forEach(function (card) {
-      card.addEventListener("pointermove", function (e) {
-        var r = card.getBoundingClientRect();
-        var x = (e.clientX - r.left) / r.width;
-        var y = (e.clientY - r.top) / r.height;
+      // Đo kích thước một lần khi chuột vào và gộp cập nhật vào 1 lần/khung hình,
+      // thay vì getBoundingClientRect + ghi style ở mỗi sự kiện pointermove.
+      var r = null, px = 0, py = 0, queued = false;
+      function apply() {
+        queued = false;
+        if (!r) return;
+        var x = (px - r.left) / r.width;
+        var y = (py - r.top) / r.height;
         card.style.setProperty("--mx", (x * 100).toFixed(1) + "%");
         card.style.setProperty("--my", (y * 100).toFixed(1) + "%");
         card.style.setProperty("--ry", ((x - 0.5) * 10).toFixed(2) + "deg");
         card.style.setProperty("--rx", ((0.5 - y) * 8).toFixed(2) + "deg");
+      }
+      card.addEventListener("pointerenter", function () { r = card.getBoundingClientRect(); });
+      card.addEventListener("pointermove", function (e) {
+        if (!r) r = card.getBoundingClientRect();
+        px = e.clientX; py = e.clientY;
+        if (!queued) { queued = true; requestAnimationFrame(apply); }
       });
       card.addEventListener("pointerleave", function () {
+        r = null;
         card.style.setProperty("--rx", "0deg");
         card.style.setProperty("--ry", "0deg");
       });
@@ -109,7 +125,7 @@
   function initRipple() {
     if (reduceMotion) return;
     document.addEventListener("pointerdown", function (e) {
-      var btn = e.target.closest && e.target.closest("a.btn, .lang-toggle");
+      var btn = e.target.closest && e.target.closest("a.btn");
       if (!btn) return;
       var r = btn.getBoundingClientRect();
       var size = Math.max(r.width, r.height) * 2;
@@ -152,6 +168,7 @@
     var W = 0, H = 0, pts = [], raf = 0, visible = true, last = 0;
     var mouse = { x: -9999, y: -9999 };
     var FRAME_MS = 1000 / 30; // 30 khung/giây là đủ mượt cho chuyển động chậm, giảm một nửa tải CPU
+    var BUCKETS = 4, buckets = [[], [], [], []];
 
     function resize() {
       W = host.clientWidth; H = host.clientHeight;
@@ -174,7 +191,7 @@
     function draw() {
       ctx.clearRect(0, 0, W, H);
       var link = 130, link2 = link * link;
-      ctx.lineWidth = 1;
+      for (var bi = 0; bi < BUCKETS; bi++) buckets[bi].length = 0;
       for (var a = 0; a < pts.length; a++) {
         var p = pts[a];
         if (!reduceMotion) {
@@ -187,10 +204,20 @@
         for (var b = a + 1; b < pts.length; b++) {
           var q = pts[b], dx = p.x - q.x, dy = p.y - q.y, d2 = dx * dx + dy * dy;
           if (d2 < link2) { // so sánh bình phương khoảng cách, chỉ lấy căn khi thật sự vẽ
-            ctx.strokeStyle = "rgba(255,255,255," + (0.22 * (1 - Math.sqrt(d2) / link)).toFixed(3) + ")";
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+            var lv = Math.min(BUCKETS - 1, Math.floor((1 - Math.sqrt(d2) / link) * BUCKETS));
+            buckets[lv].push(p.x, p.y, q.x, q.y);
           }
         }
+      }
+      // Gom đoạn nối theo vài mức độ đậm: mỗi mức chỉ 1 lần stroke thay vì 1 lần cho mỗi đoạn.
+      ctx.lineWidth = 1;
+      for (var m = 0; m < BUCKETS; m++) {
+        var seg = buckets[m];
+        if (!seg.length) continue;
+        ctx.strokeStyle = "rgba(255,255,255," + (0.22 * (m + 0.5) / BUCKETS).toFixed(3) + ")";
+        ctx.beginPath();
+        for (var j = 0; j < seg.length; j += 4) { ctx.moveTo(seg[j], seg[j + 1]); ctx.lineTo(seg[j + 2], seg[j + 3]); }
+        ctx.stroke();
       }
       // Vẽ tất cả chấm trong một path duy nhất
       ctx.fillStyle = "rgba(255,255,255,0.75)";
@@ -249,19 +276,26 @@
     };
   }
 
+  // Máy cảm ứng / màn hình nhỏ: bỏ canvas (tốn CPU và pin), nền gradient của hero vẫn giữ nguyên.
   function initCanvases() {
     canvasStops.forEach(function (stop) { stop(); });
     canvasStops = [];
-    document.querySelectorAll(".hero-canvas").forEach(function (c) { canvasStops.push(initCanvas(c)); });
+    var canvases = document.querySelectorAll(".hero-canvas");
+    if (reduceMotion || !finePointer || window.innerWidth < 768) {
+      canvases.forEach(function (c) { c.remove(); });
+      return;
+    }
+    canvases.forEach(function (c) { canvasStops.push(initCanvas(c)); });
   }
 
-  /* ---------- Khởi chạy sau mỗi lần render (kể cả khi đổi ngôn ngữ) ---------- */
+  /* ---------- Khởi chạy sau khi render ---------- */
   var bound = false;
   document.addEventListener("site:rendered", function () {
     ensureBackTop();
-    var label = window.I18N_STRINGS.backToTop[document.documentElement.lang] || "Lên đầu trang";
-    backTop.setAttribute("aria-label", label);
-    backTop.title = label;
+    backTop.setAttribute("aria-label", "Back to top");
+    backTop.title = "Back to top";
+    header = document.querySelector(".site-header");
+    bar = document.getElementById("scroll-progress");
     initReveal();
     initTilt();
     initTypewriter();
@@ -269,9 +303,13 @@
     if (!bound) {
       bound = true;
       window.addEventListener("scroll", queueScroll, { passive: true });
-      window.addEventListener("resize", queueScroll);
+      window.addEventListener("resize", onResizeScroll);
+      window.addEventListener("load", measure);
+      // Font tải xong có thể làm đổi chiều cao trang
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
       initRipple();
     }
+    measure();
     onScroll();
   });
 })();

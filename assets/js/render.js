@@ -1,43 +1,93 @@
-/* Render landing page và trang bài con từ SITE_DATA + I18N_STRINGS. */
+/* Render landing page và trang bài con từ SITE_DATA. */
 (function () {
   "use strict";
 
   var D = window.SITE_DATA;
-  var S = window.I18N_STRINGS;
   var body = document.body;
   var ROOT = body.getAttribute("data-root") || "";
   var PAGE = body.getAttribute("data-page") || "home";
   var PROJECT_ID = body.getAttribute("data-project");
-  var LANGS = ["vi", "en"];
-  var lang = detectLang();
 
-  /* ---------- Ngôn ngữ ---------- */
-  function detectLang() {
-    var fromUrl = new URLSearchParams(window.location.search).get("lang");
-    if (LANGS.indexOf(fromUrl) !== -1) {
-      saveLang(fromUrl);
-      return fromUrl;
-    }
-    try {
-      var saved = window.localStorage.getItem("lang");
-      if (LANGS.indexOf(saved) !== -1) return saved;
-    } catch (e) { /* localStorage bị chặn */ }
-    return "en";
-  }
+  /* ---------- Chuỗi giao diện ---------- */
+  var S = {
+    navCourse: "Course",
+    navGroup: "Team",
+    navProjects: "Projects",
 
-  function saveLang(l) {
-    try { window.localStorage.setItem("lang", l); } catch (e) { /* bỏ qua */ }
-  }
+    heroEyebrow: "Course Project",
+    heroCtaProjects: "View projects",
+    heroCtaRepo: "Source repository",
+    heroRotatePrefix: "Exploring",
+    heroRotate: ["tabular data", "text data", "time series"],
+    statMembers: "Members",
+    statProjects: "Sub-projects",
+    statMaterials: "Notebooks · PDFs · videos ready",
+    progress: "Completion",
 
-  // Lấy giá trị theo ngôn ngữ hiện tại, thiếu bản dịch thì rơi về tiếng Việt.
-  function tr(value) {
-    if (value == null) return "";
-    if (typeof value !== "object") return String(value);
-    return value[lang] || value.vi || "";
-  }
+    courseTitle: "Course information",
+    university: "University",
+    faculty: "Faculty",
+    courseName: "Course",
+    courseCode: "Course code",
+    semester: "Semester",
+    lecturer: "Lecturer",
+
+    groupTitle: "Team information",
+    groupName: "Team name",
+    memberName: "Full name",
+    studentId: "Student ID",
+    role: "Role / main contribution",
+    github: "GitHub",
+    repo: "Team repository",
+
+    projectsTitle: "Projects",
+    projectsLead: "Each data type is a separate sub-project with its own page, notebook, PDF report and video presentation.",
+    viewDetails: "View details",
+    owner: "Lead",
+
+    statusPlanned: "Planned",
+    "statusIn-progress": "In progress",
+    statusDone: "Completed",
+    comingSoon: "Coming soon",
+
+    linkNotebook: "Notebook (GitHub)",
+    linkColab: "Open in Colab",
+    linkReport: "PDF report",
+    linkVideo: "YouTube video",
+
+    home: "Home",
+    dataType: "Data type",
+    secTeam: "Team",
+    secProblem: "Problem statement",
+    secDataset: "Dataset",
+    secPipeline: "Workflow",
+    secResults: "Key results",
+    secResultsNote: "Figures match the metric table in the PDF report.",
+    secMaterials: "Materials",
+    secVideo: "Video presentation",
+    dsName: "Name",
+    dsSource: "Source",
+    dsSamples: "Samples",
+    dsFeatures: "Columns / features",
+    colModel: "Model",
+    colMetric: "Metric",
+    colValue: "Value",
+    prevProject: "Previous",
+    nextProject: "Next",
+    backHome: "Back to home",
+
+    step1: "Dataset description",
+    step1d: "Dataset overview in Markdown, visualized with Matplotlib / Seaborn / Plotly.",
+    step2: "Data preparation",
+    step2d: "Preprocessing with NumPy / Pandas: missing values, outliers, encoding, scaling; train / validation / test split.",
+    step3: "Analysis and modeling",
+    step3d: "Train models with Scikit-learn and compare models or hyperparameter settings.",
+    step4: "Conclusions and extensions",
+    step4d: "Evaluate with metrics, charts and confusion matrices; discuss findings, limitations and extensions."
+  };
 
   function s(key) {
-    return S[key] ? tr(S[key]) : key;
+    return S[key] || key;
   }
 
   function esc(str) {
@@ -93,7 +143,6 @@
     github: '<path d="M9 19c-4 1.5-4-2-6-2.5m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
     back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
-    globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>',
     table: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>',
     text: '<path d="M4 6h16M4 10h16M4 14h10M4 18h7"/>',
     chart: '<path d="M3 3v18h18"/><path d="m7 15 4-5 3 3 5-7"/>'
@@ -158,7 +207,6 @@
   /* ---------- Khung chung ---------- */
   function renderHeader() {
     var home = PAGE === "home" ? "" : ROOT + "index.html";
-    var other = lang === "vi" ? "EN" : "VI";
     return (
       '<div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>' +
       '<div class="container header-inner">' +
@@ -172,8 +220,6 @@
           '<a href="' + home + '#team">' + esc(s("navGroup")) + "</a>" +
           '<a href="' + home + '#projects">' + esc(s("navProjects")) + "</a>" +
         "</nav>" +
-        '<button class="lang-toggle" type="button" id="lang-toggle" aria-label="' + esc(s("switchLang")) +
-          '" title="' + esc(s("switchLang")) + '">' + icon("globe") + "<span>" + other + "</span></button>" +
       "</div>"
     );
   }
@@ -181,8 +227,8 @@
   function renderFooter() {
     return (
       '<div class="container footer-inner">' +
-        "<p><strong>" + esc(D.group.name) + "</strong> · " + esc(tr(D.course.name)) + " (" + esc(D.course.code) + ")</p>" +
-        "<p>" + esc(tr(D.course.university)) + " · " + esc(tr(D.course.semester)) + "</p>" +
+        "<p><strong>" + esc(D.group.name) + "</strong> · " + esc(D.course.name) + " (" + esc(D.course.code) + ")</p>" +
+        "<p>" + esc(D.course.university) + " · " + esc(D.course.semester) + "</p>" +
       "</div>"
     );
   }
@@ -191,11 +237,11 @@
   function renderHome() {
     var c = D.course;
     var courseRows = [
-      ["university", tr(c.university)],
-      ["faculty", tr(c.faculty)],
-      ["courseName", tr(c.name)],
+      ["university", c.university],
+      ["faculty", c.faculty],
+      ["courseName", c.name],
       ["courseCode", c.code],
-      ["semester", tr(c.semester)],
+      ["semester", c.semester],
       ["lecturer", c.lecturer]
     ].map(function (r, i) {
       return "<div" + reveal(i * 70, "info-row") + "><dt>" + esc(s(r[0])) + "</dt><dd>" + esc(r[1]) + "</dd></div>";
@@ -214,7 +260,7 @@
           (owned ? " avatar-" + esc(owned.id) : "") + '">' +
           esc(initials) + "</span><strong>" + esc(m.name) + "</strong></span></td>" +
         '<td data-label="' + esc(s("studentId")) + '">' + esc(m.studentId) + "</td>" +
-        '<td data-label="' + esc(s("role")) + '">' + esc(tr(m.role)) + "</td>" +
+        '<td data-label="' + esc(s("role")) + '">' + esc(m.role) + "</td>" +
         '<td data-label="' + esc(s("github")) + '">' + gh + "</td>" +
         "</tr>";
     }).join("");
@@ -227,15 +273,15 @@
         "<article" + reveal(i * 140, "project-card tilt type-" + esc(p.id)) + ">" +
           '<span class="spotlight" aria-hidden="true"></span>' +
           '<div class="card-top">' +
-            '<span class="type-badge">' + icon(TYPE_ICON[p.id] || "table") + esc(tr(p.type)) + "</span>" +
+            '<span class="type-badge">' + icon(TYPE_ICON[p.id] || "table") + esc(p.type) + "</span>" +
             statusBadge(p.status) +
           "</div>" +
           '<div class="card-head">' +
             '<p class="card-index">0' + (i + 1) + "</p>" +
             progressRing(progressOf(p)) +
           "</div>" +
-          "<h3>" + esc(tr(p.title)) + "</h3>" +
-          '<p class="card-summary">' + (p.summary ? esc(tr(p.summary)) : '<span class="muted">' + esc(s("comingSoon")) + "</span>") + "</p>" +
+          "<h3>" + esc(p.title) + "</h3>" +
+          '<p class="card-summary">' + (p.summary ? esc(p.summary) : '<span class="muted">' + esc(s("comingSoon")) + "</span>") + "</p>" +
           '<dl class="card-meta">' +
             "<div><dt>" + esc(s("secDataset")) + "</dt><dd>" + ds + "</dd></div>" +
             "<div><dt>" + esc(s("owner")) + "</dt><dd>" + esc(p.owner) + "</dd></div>" +
@@ -260,7 +306,7 @@
         esc(st.suffix || "") + '">0' + esc(st.suffix || "") + '</span><span class="stat-label">' + esc(s(st.key)) + "</span></div>";
     }).join("");
 
-    var rotate = S.heroRotate[lang] || S.heroRotate.vi;
+    var rotate = S.heroRotate;
 
     var hexes = [
       { x: 78, y: 18, s: 120, d: 0 }, { x: 88, y: 62, s: 70, d: 2 }, { x: 66, y: 72, s: 46, d: 4 },
@@ -280,12 +326,12 @@
         '<div class="hero-hexes" aria-hidden="true">' + hexes + "</div>" +
         '<div class="hero-glow" aria-hidden="true"></div>' +
         '<div class="container hero-inner">' +
-          '<p class="eyebrow fade-up" style="--d:0ms"><span class="pulse-dot"></span>' + esc(s("heroEyebrow")) + " · " + esc(c.code) + " · " + esc(tr(c.semester)) + "</p>" +
-          '<h1 class="split">' + splitWords(tr(c.name)) + "</h1>" +
+          '<p class="eyebrow fade-up" style="--d:0ms"><span class="pulse-dot"></span>' + esc(s("heroEyebrow")) + " · " + esc(c.code) + " · " + esc(c.semester) + "</p>" +
+          '<h1 class="split">' + splitWords(c.name) + "</h1>" +
           '<p class="hero-rotate fade-up" style="--d:700ms">' + esc(s("heroRotatePrefix")) + ' <span class="typewriter" data-words="' +
             esc(JSON.stringify(rotate)) + '">' + esc(rotate[0]) + '</span><span class="caret" aria-hidden="true"></span></p>' +
           '<p class="hero-group fade-up" style="--d:850ms">' + esc(s("groupName")) + ': <strong class="shimmer-text">' + esc(D.group.name) + "</strong></p>" +
-          '<p class="hero-lead fade-up" style="--d:1000ms">' + esc(tr(D.group.tagline)) + "</p>" +
+          '<p class="hero-lead fade-up" style="--d:1000ms">' + esc(D.group.tagline) + "</p>" +
           '<div class="hero-actions fade-up" style="--d:1150ms">' +
             '<a class="btn btn-primary shine" href="#projects">' + esc(s("heroCtaProjects")) + icon("arrow") + "</a>" +
             '<a class="btn btn-ghost" href="' + repoUrl + '" target="_blank" rel="noopener">' + icon("github") + esc(s("heroCtaRepo")) + "</a>" +
@@ -345,7 +391,7 @@
     if (p.dataset) {
       var d = p.dataset;
       dataset =
-        (d.description ? "<p>" + esc(tr(d.description)) + "</p>" : "") +
+        (d.description ? "<p>" + esc(d.description) + "</p>" : "") +
         '<dl class="info-grid compact">' +
           '<div class="info-row"><dt>' + esc(s("dsName")) + "</dt><dd>" + esc(d.name) + "</dd></div>" +
           '<div class="info-row"><dt>' + esc(s("dsSource")) + "</dt><dd>" +
@@ -373,7 +419,7 @@
     var vid = youtubeId(p.links.video);
     var video = vid
       ? '<div class="video-frame"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(vid) +
-        '" title="' + esc(D.group.name + " – " + tr(p.type)) + '" loading="lazy" allowfullscreen ' +
+        '" title="' + esc(D.group.name + " – " + p.type) + '" loading="lazy" allowfullscreen ' +
         'allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe></div>'
       : '<div class="video-placeholder">' + icon("video") + "<span>" + esc(s("comingSoon")) + "</span></div>";
 
@@ -383,10 +429,10 @@
       if (!target) return "<span></span>";
       return '<a class="pager-link ' + dir + '" href="' + ROOT + target.id + '/">' +
         "<small>" + esc(s(dir === "prev" ? "prevProject" : "nextProject")) + "</small>" +
-        "<span>" + esc(tr(target.title)) + "</span></a>";
+        "<span>" + esc(target.title) + "</span></a>";
     }
 
-    document.title = tr(p.title) + " · " + D.group.name;
+    document.title = p.title + " · " + D.group.name;
 
     return (
       '<section class="page-head type-' + esc(p.id) + '">' +
@@ -396,20 +442,20 @@
           "<div" + reveal(500, "page-head-ring") + ">" + progressRing(progressOf(p)) +
             "<small>" + esc(s("progress")) + "</small></div>" +
           '<nav class="breadcrumb fade-up" style="--d:0ms" aria-label="Breadcrumb"><a href="' + ROOT + 'index.html">' + esc(s("home")) +
-            "</a><span>›</span><span>" + esc(tr(p.type)) + "</span></nav>" +
+            "</a><span>›</span><span>" + esc(p.type) + "</span></nav>" +
           '<div class="card-top fade-up" style="--d:120ms">' +
-            '<span class="type-badge">' + icon(TYPE_ICON[p.id] || "table") + esc(s("dataType")) + ": " + esc(tr(p.type)) + "</span>" +
+            '<span class="type-badge">' + icon(TYPE_ICON[p.id] || "table") + esc(s("dataType")) + ": " + esc(p.type) + "</span>" +
             statusBadge(p.status) +
           "</div>" +
-          '<h1 class="split">' + splitWords(tr(p.title)) + "</h1>" +
-          (p.summary ? '<p class="hero-lead fade-up" style="--d:600ms">' + esc(tr(p.summary)) + "</p>" : "") +
+          '<h1 class="split">' + splitWords(p.title) + "</h1>" +
+          (p.summary ? '<p class="hero-lead fade-up" style="--d:600ms">' + esc(p.summary) + "</p>" : "") +
         "</div>" +
       "</section>" +
 
       '<div class="container project-layout">' +
         '<div class="project-main">' +
           "<section" + reveal(0, "block") + "><h2>" + esc(s("secProblem")) + "</h2>" +
-            (p.problem ? "<p>" + esc(tr(p.problem)) + "</p>" : comingSoon()) + "</section>" +
+            (p.problem ? "<p>" + esc(p.problem) + "</p>" : comingSoon()) + "</section>" +
           "<section" + reveal(0, "block") + "><h2>" + esc(s("secDataset")) + "</h2>" + dataset + "</section>" +
           "<section" + reveal(0, "block") + "><h2>" + esc(s("secPipeline")) + '</h2><ol class="steps timeline">' + steps + "</ol></section>" +
           "<section" + reveal(0, "block") + "><h2>" + esc(s("secResults")) + "</h2>" + results + "</section>" +
@@ -428,24 +474,9 @@
   }
 
   /* ---------- Khởi chạy ---------- */
-  function render() {
-    document.documentElement.lang = lang;
-    if (PAGE === "home") {
-      document.title = D.group.name + " · " + tr(D.course.name);
-    }
-    document.getElementById("site-header").innerHTML = renderHeader();
-    document.getElementById("app").innerHTML = PAGE === "project" ? renderProject() : renderHome();
-    document.getElementById("site-footer").innerHTML = renderFooter();
-    document.dispatchEvent(new CustomEvent("site:rendered"));
-
-    document.getElementById("lang-toggle").addEventListener("click", function () {
-      var y = window.scrollY;
-      lang = lang === "vi" ? "en" : "vi";
-      saveLang(lang);
-      render();
-      window.scrollTo(0, y);
-    });
-  }
-
-  render();
+  if (PAGE === "home") document.title = D.group.name + " · " + D.course.name;
+  document.getElementById("site-header").innerHTML = renderHeader();
+  document.getElementById("app").innerHTML = PAGE === "project" ? renderProject() : renderHome();
+  document.getElementById("site-footer").innerHTML = renderFooter();
+  document.dispatchEvent(new CustomEvent("site:rendered"));
 })();

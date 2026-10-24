@@ -3,10 +3,9 @@
    ===================================================================== */
 
 /* ----- Header: thu nhỏ khi cuộn + thanh tiến độ ----- */
-.site-header { transition: box-shadow .3s, background .3s; }
-.header-inner { transition: min-height .3s; }
+/* Không đổi chiều cao header khi cuộn: đổi min-height buộc trình duyệt tính lại layout cả trang mỗi khung hình. */
+.site-header { transition: box-shadow .3s; }
 .site-header.scrolled { box-shadow: 0 6px 24px rgba(3, 43, 145, .12); }
-.site-header.scrolled .header-inner { min-height: 52px; }
 .brand img { transition: transform .6s cubic-bezier(.2, .8, .2, 1); }
 .brand:hover img { transform: rotate(360deg) scale(1.08); }
 .scroll-progress {
@@ -20,25 +19,21 @@
   background: var(--primary); transform: scaleX(0); transition: transform .3s;
 }
 .nav a:hover::after { transform: scaleX(1); }
-.lang-toggle .icon { transition: transform .6s; }
-.lang-toggle:hover .icon { transform: rotate(180deg); }
 
 /* ----- Nút: nổi lên, vệt sáng, gợn sóng ----- */
-.btn, .lang-toggle { position: relative; overflow: hidden; isolation: isolate; }
+.btn { position: relative; overflow: hidden; isolation: isolate; }
 a.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11, 92, 196, .18); }
 a.btn:active { transform: translateY(0); }
 a.btn .icon:last-child { transition: transform .25s; }
 a.btn:hover .icon:last-child { transform: translateX(3px); }
-/* Chỉ animate transform (chạy trên GPU), không animate left để tránh tính lại layout mỗi khung hình */
+/* Vệt sáng chỉ chạy khi hover (trước đây chạy vô hạn) */
 .shine::after {
   content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; z-index: -1;
   background: linear-gradient(110deg, transparent, rgba(20, 136, 216, .35), transparent);
-  transform: translateX(-150%) skewX(-20deg); animation: shine 3.6s ease-in-out infinite;
+  transform: translateX(-150%) skewX(-20deg);
 }
-@keyframes shine {
-  0%, 60% { transform: translateX(-150%) skewX(-20deg); }
-  100% { transform: translateX(330%) skewX(-20deg); }
-}
+.shine:hover::after { animation: shine .9s ease-in-out; }
+@keyframes shine { to { transform: translateX(330%) skewX(-20deg); } }
 .ripple {
   position: absolute; border-radius: 50%; pointer-events: none; z-index: -1;
   background: currentColor; opacity: .25; transform: scale(0);
@@ -76,20 +71,22 @@ a.btn:hover .icon:last-child { transform: translateX(3px); }
 /* Tiêu đề hiện từng chữ */
 .split .word { display: inline-block; }
 .js-anim .split .word {
-  opacity: 0; transform: translateY(.7em) rotate(4deg); filter: blur(6px);
+  opacity: 0; transform: translateY(.7em) rotate(4deg);
   animation: word-in .9s cubic-bezier(.2, .75, .2, 1) forwards;
   animation-delay: calc(var(--i) * 70ms + 150ms);
 }
-@keyframes word-in { to { opacity: 1; transform: none; filter: blur(0); } }
+@keyframes word-in { to { opacity: 1; transform: none; } }
 .js-anim .fade-up { opacity: 0; animation: fade-up .9s cubic-bezier(.2, .75, .2, 1) forwards; animation-delay: var(--d, 0ms); }
 @keyframes fade-up { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
 
 .eyebrow { display: inline-flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.pulse-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #5cf0b4; flex-shrink: 0;
-  box-shadow: 0 0 0 0 rgba(92, 240, 180, .7); animation: pulse 2s infinite;
+/* Vòng lan toả dùng transform + opacity (chạy trên GPU) thay vì animate box-shadow (vẽ lại mỗi khung hình) */
+.pulse-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: #5cf0b4; flex-shrink: 0; }
+.pulse-dot::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; background: #5cf0b4;
+  animation: pulse 2s ease-out infinite;
 }
-@keyframes pulse { 70% { box-shadow: 0 0 0 10px rgba(92, 240, 180, 0); } 100% { box-shadow: 0 0 0 0 rgba(92, 240, 180, 0); } }
+@keyframes pulse { from { transform: scale(1); opacity: .7; } 70%, to { transform: scale(3.5); opacity: 0; } }
 
 /* Chữ gõ máy */
 .hero-rotate { font-size: clamp(1.1rem, 2.4vw, 1.45rem); font-weight: 600; margin-bottom: .8em; min-height: 1.6em; }
@@ -102,13 +99,11 @@ a.btn:hover .icon:last-child { transform: translateX(3px); }
   background: #fff; border-radius: 2px; animation: blink 1s steps(1) infinite;
 }
 @keyframes blink { 50% { opacity: 0; } }
+/* Gradient tĩnh: animate background-position trên chữ buộc vẽ lại liên tục */
 .shimmer-text {
-  background: linear-gradient(90deg, #fff 0%, #fff 40%, #9fe7ff 50%, #fff 60%, #fff 100%);
-  background-size: 250% 100%;
+  background: linear-gradient(90deg, #fff, #9fe7ff 55%, #fff);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  animation: shimmer 4s linear infinite;
 }
-@keyframes shimmer { from { background-position: 100% 0; } to { background-position: -150% 0; } }
 
 .scroll-hint {
   position: absolute; left: 50%; bottom: 76px; translate: -50% 0;
@@ -282,13 +277,7 @@ body[data-project="timeseries"] { --accent: var(--c-timeseries); }
 .pager-link { transition: transform .25s, border-color .25s, box-shadow .25s; }
 .pager-link:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
 
-/* Ô chờ video: hiệu ứng skeleton */
-.video-placeholder { position: relative; overflow: hidden; }
-.video-placeholder::after {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--accent, var(--primary)) 10%, transparent) 50%, transparent 70%);
-  background-size: 200% 100%; animation: shimmer 2.4s linear infinite;
-}
+/* Ô chờ video */
 .video-placeholder .icon { animation: bob 2.4s ease-in-out infinite; }
 @keyframes bob { 50% { transform: translateY(-6px); } }
 
