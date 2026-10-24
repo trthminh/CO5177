@@ -15,6 +15,10 @@ statsmodels>=0.14
 
 # Trực quan hóa
 plotly>=5.15
+# kaleido: lưu kèm ảnh PNG cho mỗi biểu đồ Plotly để GitHub hiển thị được output của notebook.
+# kaleido 0.2.1 bị treo trên Windows nên dùng bản 0.1.0.post1 ở đó.
+kaleido==0.1.0.post1; sys_platform == "win32"
+kaleido==0.2.1; sys_platform != "win32"
 
 # Chạy notebook trên máy
 jupyterlab
