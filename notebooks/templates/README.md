@@ -1,4 +1,4 @@
-# Notebook templates — DataInsight (CO5177)
+# Notebook templates: DataInsight (CO5177)
 
 One template per data type. They share the same skeleton, setup code, plot style and conventions, so the three notebooks the group submits read as one piece of work.
 
