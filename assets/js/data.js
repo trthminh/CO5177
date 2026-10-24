@@ -119,7 +119,7 @@ window.SITE_DATA = {
       },
       owner: "Trương Thanh Minh",
       status: "in-progress",
-      links: { notebook: null, report: null, video: null },
+      links: { notebook: "notebooks/timeseries.ipynb", report: null, video: null },
       results: []
     }
   ]

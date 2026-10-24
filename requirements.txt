@@ -1,0 +1,21 @@
+# Thư viện cho các notebook của nhóm DataInsight (CO5177).
+# Cài đặt: pip install -r requirements.txt
+# Google Colab đã có sẵn các thư viện này; file dùng khi chạy notebook trên máy cá nhân.
+# Đã chạy thử notebooks/timeseries.ipynb với: numpy 2.2.6, pandas 2.2.3, scipy 1.14.1,
+# scikit-learn 1.5.2, statsmodels 0.14.4, plotly 5.24.1.
+
+# Xử lý dữ liệu
+numpy>=1.26,<3
+pandas>=2.2,<3
+scipy>=1.11
+
+# Mô hình và thống kê
+scikit-learn>=1.2
+statsmodels>=0.14
+
+# Trực quan hóa
+plotly>=5.15
+
+# Chạy notebook trên máy
+jupyterlab
+ipykernel

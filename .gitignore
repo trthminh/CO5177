@@ -1,0 +1,7 @@
+# Dữ liệu tải về — notebook tự tải từ nguồn gốc khi chạy
+data/
+
+# Python / Jupyter
+__pycache__/
+.ipynb_checkpoints/
+.venv/
