@@ -75,7 +75,7 @@ window.SITE_DATA = {
       type: "Time series",
       title: "Time Series Analysis and Forecasting",
       summary: "Forecasting hourly traffic volume on Interstate 94 (Minneapolis – St Paul, USA) from history, weather and holidays.",
-      problem: "Time series regression: forecast traffic_volume for the coming hours. Data is split into train/validation/test chronologically (no shuffling); Scikit-learn models using lag features, rolling means, hour/day-of-week and weather variables are compared against a naive baseline with MAE, RMSE and MAPE.",
+      problem: "Time series regression: forecast traffic_volume one hour ahead. Data is split into train/validation/test chronologically (no shuffling); Scikit-learn models using lag features, rolling means, hour/weekday/holiday flags and the previous hour's weather are compared with naive baselines and a SARIMAX model with weekly Fourier terms, using MAE, RMSE and MAPE.",
       dataset: {
         name: "Metro Interstate Traffic Volume",
         url: "https://www.kaggle.com/datasets/pooriamst/metro-interstate-traffic-volume",
@@ -86,7 +86,12 @@ window.SITE_DATA = {
       owner: "Trương Thanh Minh",
       status: "in-progress",
       links: { notebook: "notebooks/timeseries.ipynb", report: null, video: null },
-      results: []
+      results: [
+        { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "131.5" },
+        { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs naive (MAE)", value: "+77.4%" },
+        { model: "Seasonal naive (same hour last week)", metric: "Test MAE (vehicles/hour)", value: "257.2" },
+        { model: "SARIMAX(3,0,0) + weekly Fourier K=63", metric: "Validation MAE (vehicles/hour)", value: "199.1" }
+      ]
     }
   ]
 };
