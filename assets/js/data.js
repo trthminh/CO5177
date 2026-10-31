@@ -62,13 +62,40 @@ window.SITE_DATA = {
       id: "tabular",
       type: "Tabular",
       title: "Tabular Data Analysis",
-      summary: null,
-      problem: null,
-      dataset: null, // { name, url, samples, features, description }
+      summary: "Predicting hotel booking cancellations from the information available when a booking is made.",
+      problem: "Binary classification: predict is_canceled for bookings of a resort hotel and a city hotel in Portugal. Columns recorded after the booking (reservation status, assigned room, booking changes) are excluded to avoid leakage, duplicate rows are removed before a stratified 70/15/15 split, and all preprocessing is fitted on the training set inside a Pipeline. Scikit-learn models are compared with a majority-class baseline using PR-AUC and F1 of the cancelled class; class weights, SMOTE and a tuned decision threshold are compared for the class imbalance.",
+      dataset: {
+        name: "Hotel Booking Demand",
+        url: "https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11",
+        samples: "119,390 bookings (85,175 after removing duplicates and invalid rows)",
+        features: "32 columns: lead time, stay length, guests, meal, country, market segment, distribution channel, deposit type, agent, company, average daily rate, special requests, is_canceled (target), ...",
+        description: "Bookings from the property management systems of a resort hotel (Algarve) and a city hotel (Lisbon) with arrivals between July 2015 and August 2017 (António, Almeida & Nunes, Data in Brief, 2019, CC BY 4.0; TidyTuesday 2020-02-11 version). It contains missing values in agent, company and country, about 32,000 exact duplicate rows and long-tailed numeric columns, and 37% of the bookings are cancelled."
+      },
+      // Optional: project-specific steps shown under "Workflow" (other projects use the generic four steps)
+      workflow: [
+        { title: "Data loading and checks",
+          detail: "Downloaded hotels.csv (119,390 bookings, 32 columns) and removed 5 columns that are only known after booking." },
+        { title: "Data quality",
+          detail: "Kept missing agent / company / country as a separate category; removed 34,050 duplicate rows and 165 invalid rows, leaving 85,175 bookings (27.7% cancelled)." },
+        { title: "Exploratory analysis",
+          detail: "Three questions on lead time, Non Refund deposits and special requests, each compared on all rows and on de-duplicated rows." },
+        { title: "Preprocessing",
+          detail: "Stratified 70/15/15 split; Pipeline + ColumnTransformer fitted on train only; compared 4 missing-value and 3 outlier strategies (chose missing-as-category and log1p)." },
+        { title: "Modeling",
+          detail: "7 models against a baseline, a leakage experiment, class weights vs SMOTE vs tuned threshold, and RandomizedSearchCV on HistGradientBoosting." },
+        { title: "Evaluation",
+          detail: "Final model (tuned HistGradientBoosting, threshold 0.364) tested once: PR-AUC 0.775, F1 0.707, recall 0.775; permutation importance and error analysis." }
+      ],
       owner: "Trần Lê Hoàng Long",
-      status: "planned", // planned | in-progress | done
-      links: { notebook: null, report: null, video: null },
-      results: [] // [{ model: "...", metric: "F1-macro", value: "0.87" }]
+      status: "in-progress", // planned | in-progress | done
+      links: { notebook: "notebooks/tabular.ipynb", report: "reports/tabular-report.pdf", video: null },
+      results: [
+        { model: "Baseline (majority class)", metric: "PR-AUC (test)", value: "0.277" },
+        { model: "HistGradientBoosting, tuned, threshold 0.364", metric: "PR-AUC (test)", value: "0.775" },
+        { model: "HistGradientBoosting, tuned, threshold 0.364", metric: "F1, cancelled class (test)", value: "0.707" },
+        { model: "HistGradientBoosting, tuned, threshold 0.364", metric: "Recall, cancelled class (test)", value: "0.775" },
+        { model: "HistGradientBoosting, tuned, threshold 0.364", metric: "ROC-AUC (test)", value: "0.900" }
+      ]
     },
     {
       id: "timeseries",
