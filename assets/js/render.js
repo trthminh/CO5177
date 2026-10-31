@@ -401,9 +401,13 @@
         "</dl>";
     }
 
-    var steps = [1, 2, 3, 4].map(function (n) {
-      return "<li" + reveal(n * 120, "step") + '><span class="step-num">' + n + "</span><div><h4>" + esc(s("step" + n)) +
-        "</h4><p>" + esc(s("step" + n + "d")) + "</p></div></li>";
+    // Project-specific workflow if data.js provides one, otherwise the four generic steps
+    var workflow = (p.workflow && p.workflow.length) ? p.workflow : [1, 2, 3, 4].map(function (n) {
+      return { title: s("step" + n), detail: s("step" + n + "d") };
+    });
+    var steps = workflow.map(function (w, i) {
+      return "<li" + reveal((i + 1) * 120, "step") + '><span class="step-num">' + (i + 1) + "</span><div><h4>" + esc(w.title) +
+        "</h4><p>" + esc(w.detail) + "</p></div></li>";
     }).join("");
 
     var results = comingSoon();

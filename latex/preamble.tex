@@ -62,5 +62,5 @@
 % Shows a placeholder box until the figure exists in figures/
 \newcommand{\figureplaceholder}[2]{%
   \IfFileExists{\reportroot figures/#1}{\includegraphics[width=0.92\textwidth]{#1}}%
-  {\fbox{\parbox[c][4cm][c]{0.88\textwidth}{\centering Insert figure at \texttt{figures/#1}\\#2}}}%
+  {\fbox{\parbox[c][4cm][c]{0.88\textwidth}{\centering Insert figure at \texttt{\detokenize{figures/#1}}\\#2}}}%
 }
