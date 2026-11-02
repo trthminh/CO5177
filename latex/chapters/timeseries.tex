@@ -1,0 +1,190 @@
+\chapter{Time Series Analysis and Forecasting}
+\label{chap:timeseries}
+% Time series chapter, owner: Trương Thanh Minh
+% Numbers come from notebooks/timeseries.ipynb; update them after each rerun
+
+\section{Problem and Objectives}
+\textbf{Problem:} forecast \texttt{traffic\_volume}, the hourly number of westbound vehicles on Interstate 94
+(Minneapolis -- St Paul, USA), from past traffic, calendar (hour, weekday, holidays) and weather.
+This is an hourly time series regression task.
+
+\textbf{Evaluation:} MAE, RMSE and MAPE, compared against a naive baseline.
+[Fill in the forecast horizon \texttt{HORIZON} once modelling is final.]
+
+\section{Dataset}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Name: Metro Interstate Traffic Volume (Kaggle, originally from the UCI Machine Learning Repository).
+    \item URL: \url{https://www.kaggle.com/datasets/pooriamst/metro-interstate-traffic-volume}
+    \item Source: MnDOT ATR station 301; hourly weather from OpenWeatherMap.
+    \item Period and frequency: Oct 2012 -- Sep 2018, hourly.
+    \item Size: 48,204 rows, 9 columns.
+    \item Target: \texttt{traffic\_volume}. Other variables: \texttt{holiday}, \texttt{temp}, \texttt{rain\_1h},
+          \texttt{snow\_1h}, \texttt{clouds\_all}, \texttt{weather\_main}, \texttt{weather\_description}.
+    \item License: CC BY 4.0.
+\end{itemize}
+
+\section{Data Quality and Cleaning}
+\begin{table}[H]
+\centering
+\caption{Data quality issues and how they were handled}
+\label{tab:ts-quality}
+\begin{tabular}{p{4.2cm}p{4.6cm}p{5.6cm}}
+\toprule
+Issue & Size & Handling\\
+\midrule
+Duplicate timestamps (several weather events in one hour) & 7,629 / 48,204 rows (15.8\%) & Merge to one row per hour, add \texttt{n\_weather}\\
+Missing hours (2012--2018) & 11,976 hours (22.8\%), longest gap $\approx$ 10 months & Keep Jan 2016 -- Sep 2018 only\\
+Missing hours in the chosen window & 1,012 / 24,096 hours (4.2\%) & Hourly reindex, linear interpolation, \texttt{is\_imputed} flag\\
+Sensor errors & 10 hours with \texttt{temp} = 0 K, 1 hour with \texttt{rain\_1h} = 9,831 mm & Set to NaN, then interpolate\\
+Holiday label only at 00:00 & 61 rows & Spread the label to all 24 hours\\
+\texttt{traffic\_volume} outliers & 1,080 hours (4.5\%) by median/MAD & Keep values (real events), \texttt{is\_anomaly} flag\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+[1--2 paragraphs: why the 2016--2018 window, why linear interpolation rather than forward-fill.]
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_missing_gaps.png}{Monthly data coverage / distribution of gap lengths.}
+\caption{[Conclusion: gaps before 2016 reach almost 10 months, after 2016 only a few hours.]}
+\label{fig:ts-missing}
+\end{figure}
+
+\section{Exploratory Data Analysis}
+
+\subsection{Target Distribution}
+The distribution is bimodal: about 22\% of hours have fewer than 1,000 vehicles (late night)
+and 45\% have 4,000 or more (daytime).
+[Insert histogram and observation.]
+
+\subsection{Hourly, Weekly and Monthly Seasonality}
+The busiest hour (16:00) carries about 14.5 times the traffic of the quietest hour (03:00),
+while the busiest month is only about 12\% above the quietest.
+The two peaks at 06:00--07:00 and 15:00--17:00 appear only on weekdays.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_heatmap_hour_dow.png}{Heatmap of mean traffic by weekday × hour.}
+\caption{[Conclusion: commuter peaks occur only on weekdays.]}
+\label{fig:ts-heatmap}
+\end{figure}
+
+\subsection{Question 1: How Much Do Holidays Reduce Traffic?}
+Total daily traffic on holidays is about 28\% lower than on weekdays, close to weekends (26\%);
+the 07:00 peak drops to about 3,100 vehicles versus 6,150 on weekdays.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_holiday_profile.png}{Hourly profile: weekday, weekend, holiday.}
+\caption{Holidays cut daily traffic by about 28\%, similar to weekends.}
+\label{fig:ts-holiday}
+\end{figure}
+
+\subsection{Question 2: How Much Does Bad Weather Reduce Traffic?}
+Each hour is compared with the median of the same weekday and hour (non-holiday, 06:00--20:00, observed hours only):
+\[
+\text{relative difference} = \frac{y_t - \operatorname{median}(y \mid \text{weekday}, \text{hour})}{\operatorname{median}(y \mid \text{weekday}, \text{hour})}
+\]
+Most weather types shift traffic by less than 2\%; snow reduces it by 10.6\% (879 hours)
+and ``heavy'' rain/snow by 13.6\%.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_weather_effect.png}{Relative difference by weather type.}
+\caption{Only snow and heavy rain/snow reduce traffic noticeably (10--14\%).}
+\label{fig:ts-weather}
+\end{figure}
+
+\subsection{Seasonal Decomposition (MSTL) and Autocorrelation}
+MSTL with 24- and 168-hour periods: daily seasonality explains about 79\% of the variance,
+weekly seasonality 15\%, trend 1\% and the remainder 4\%.
+The ACF peaks at lags 1--3, 24 and 168 $\Rightarrow$ lags 1, 2, 3, 24 and 168 are used as features.
+
+\subsection{Question 3: Which Statistics Detect Outliers?}
+On the residual after removing the weekday × hour profile, rolling mean/std z-scores are compared
+with robust rolling median/MAD z-scores (168-hour window, threshold $|z| > 3.5$).
+Median/MAD catches 14/14 daytime road-closure hours; mean/std catches 0/14 because of masking.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_outlier_compare.png}{Outliers: mean/std vs median/MAD.}
+\caption{Median/MAD flags 14/14 road-closure hours, mean/std flags 0/14.}
+\label{fig:ts-outlier}
+\end{figure}
+
+\section{Data Preparation}
+
+\subsection{Feature Engineering}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Lags: \texttt{lag\_1}, \texttt{lag\_2}, \texttt{lag\_3}, \texttt{lag\_24}, \texttt{lag\_168}.
+    \item Rolling (on the series shifted by 1 hour): \texttt{roll\_mean\_24}, \texttt{roll\_std\_24}.
+    \item Calendar: \texttt{hour}, \texttt{dayofweek} (plus sin/cos), \texttt{month}, \texttt{is\_weekend}, \texttt{is\_holiday}.
+    \item Weather: \texttt{temp\_c}, \texttt{rain\_1h}, \texttt{snow\_1h}, \texttt{clouds\_all}, \texttt{n\_weather}, \texttt{weather\_group}.
+\end{itemize}
+Assumption: weather for the forecast hour is known in advance (from a weather forecast).
+
+\subsection{Chronological Train / Validation / Test Split}
+\begin{table}[H]
+\centering
+\caption{Chronological split (no shuffling)}
+\label{tab:ts-split}
+\begin{tabular}{lll}
+\toprule
+Set & Period & Shape of $X$\\
+\midrule
+Train & 2016-01-08 -- 2017-11-30 & 16,632 × 29\\
+Validation & 2017-12-01 -- 2018-04-30 & 3,624 × 29\\
+Test & 2018-05-01 -- 2018-09-30 & 3,672 × 29\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Encoding, Scaling and Leakage Prevention}
+\texttt{OneHotEncoder(handle\_unknown="ignore")} for \texttt{weather\_group}; \texttt{StandardScaler} for numeric columns.
+Both are fitted on train only. \texttt{is\_anomaly} is not used as a feature because it comes from a centred window.
+
+\section{Models and Experimental Setup}
+[Naive baselines (\texttt{lag\_1}, \texttt{lag\_24}, \texttt{lag\_168}), Linear Regression/Ridge,
+Random Forest, Gradient Boosting; tuning with \texttt{TimeSeriesSplit} on train; model selection on validation.]
+
+\section{Results and Evaluation}
+\begin{table}[H]
+\centering
+\caption{Comparison of time series models on the test set}
+\label{tab:ts-results}
+\begin{tabular}{lrrr}
+\toprule
+Model & MAE & RMSE & MAPE\\
+\midrule
+Naive \texttt{lag\_168} & -- & -- & --\\
+Ridge & -- & -- & --\\
+Random Forest & -- & -- & --\\
+Gradient Boosting & -- & -- & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{ts_forecast_test.png}{Forecast vs actual on the test set.}
+\caption{[State the quantitative conclusion, matching the notebook.]}
+\label{fig:ts-forecast}
+\end{figure}
+
+[Error analysis: which hours the model gets most wrong, \texttt{is\_anomaly} hours vs normal hours.]
+
+\section{Limitations and Future Work}
+\begin{itemize}[leftmargin=1.5cm]
+    \item A single station and a single direction (westbound).
+    \item Weather is treated as known in advance for the forecast hour.
+    \item The test set covers only summer -- autumn 2018.
+    \item [Future work.]
+\end{itemize}
+
+\section{References}
+\begin{itemize}[leftmargin=1.5cm]
+    \item J. Hogue, \textit{Metro Interstate Traffic Volume}, UCI Machine Learning Repository, 2019. CC BY 4.0.
+    \item K. Bandara, R. J. Hyndman, C. Bergmeir, \textit{MSTL: A Seasonal-Trend Decomposition Algorithm for Time Series with Multiple Seasonal Patterns}, 2021.
+    \item B. Iglewicz, D. C. Hoaglin, \textit{How to Detect and Handle Outliers}, ASQC Quality Press, 1993.
+\end{itemize}

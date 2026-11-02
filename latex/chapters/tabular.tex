@@ -1,0 +1,332 @@
+\chapter{Tabular Data Analysis}
+\label{chap:tabular}
+% Tabular chapter, owner: Trần Lê Hoàng Long
+% Numbers come from notebooks/tabular.ipynb (Colab run); figures are exported from the same run
+\sloppy % long column names in \texttt cannot be hyphenated; \fussy at the end of the chapter restores the default
+
+\section{Problem and Objectives}
+When a booking is cancelled close to the arrival date, the hotel usually cannot sell the room again.
+If the hotel knows in advance which bookings are likely to be cancelled, it can call the guest to confirm,
+ask for a deposit or accept a few extra bookings to fill the gap.
+This chapter predicts whether a hotel booking will be cancelled (\texttt{is\_canceled} = 1) using only the
+information that is available when the booking is made, such as lead time, length of stay, number of guests,
+sales channel, deposit type, price and the guest's history.
+
+Since only part of the bookings are cancelled, models are compared mainly by the PR-AUC (average precision)
+and the F1-score of the cancelled class on the validation set. Accuracy is reported only for reference.
+
+\section{Dataset}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Name: Hotel Booking Demand (TidyTuesday 2020-02-11 version, identical to the Kaggle copy).
+    \item URL: \url{https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11}
+    \item Source: property management systems of two hotels in Portugal, a resort hotel in the Algarve (H1, 40,060 bookings)
+          and a city hotel in Lisbon (H2, 79,330 bookings), arrivals from July 2015 to August 2017.
+    \item Size: 119,390 rows, 32 columns; one row is one booking.
+    \item Target: \texttt{is\_canceled} (37.0\% cancelled in the raw data).
+    \item Missing values: 129,425 cells, in \texttt{company} (94.3\%), \texttt{agent} (13.7\%), \texttt{country} (0.4\%)
+          and \texttt{children} (4 cells).
+    \item License / citation: N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets},
+          Data in Brief 22 (2019) 41--49, CC BY 4.0.
+\end{itemize}
+
+Each column was checked to see whether it is known at the time of booking.
+Four columns are only recorded later and were removed: \texttt{reservation\_status} and \texttt{reservation\_status\_date}
+(they are the outcome itself), \texttt{assigned\_room\_type} (known at check-in) and \texttt{booking\_changes}
+(counted until check-in or cancellation). \texttt{arrival\_date\_year} was also removed because it only covers 2015--2017.
+The remaining 26 features consist of 15 numeric and 11 categorical columns; \texttt{agent} and \texttt{company}
+are stored as numbers but are treated as categorical because they are IDs.
+
+\section{Data Quality Checks}
+\begin{table}[H]
+\centering
+\caption{Data quality issues and how they were handled}
+\label{tab:tab-quality}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.6cm}}
+\toprule
+Issue & Size & Handling\\
+\midrule
+Missing \texttt{company}, \texttt{agent} & 94.3\% and 13.7\% of rows & Kept as a separate \texttt{"missing"} category, plus \texttt{has\_company}, \texttt{has\_agent} flags\\
+Missing \texttt{country}, \texttt{children} & 488 and 4 cells & Same category approach; \texttt{children} filled with the train median\\
+Exact duplicate rows & 31,994 rows (26.8\%); 34,050 after removing the dropped columns & Removed before splitting\\
+Negative or extreme \texttt{adr} & 1 row at $-6.38$, 1 row at 5,400 & Removed (valid range 0--1,000)\\
+Bookings with no guests & 180 rows & Removed with a multi-column rule\\
+\texttt{meal = Undefined} & 1,169 rows & Merged with \texttt{SC} (no meal package)\\
+Long right tails (\texttt{lead\_time}, \texttt{adr}, stays) & up to 737 days, 50 nights & Kept; \texttt{log1p} and \texttt{RobustScaler}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Missing values are not random in this dataset. Bookings without a company were cancelled 38.2\% of the time,
+compared with 17.5\% for bookings with a company, while bookings without an agent were cancelled 24.7\% of the time
+against 39.0\% for those with an agent. An empty \texttt{agent} or \texttt{company} simply means that the booking was not
+made through an agency or a company, so these cells were kept as information instead of being filled in.
+
+The duplicates deserve attention. The dataset has no booking ID, so several identical rooms booked by one group become
+identical rows. The duplicate copies are very different from the rest: 63.1\% of them were cancelled (27.5\% for the other rows),
+42.3\% are Non Refund (1.2\%) and 46.5\% belong to the Groups segment (5.7\%). In fact 13,549 of the 14,587 Non Refund
+bookings are duplicates. Keeping them would place the same booking in both training and test data, so they were removed.
+After cleaning, 85,175 bookings remain and the cancellation rate drops from 37.0\% to 27.7\%.
+
+The IQR rule was not useful for the count columns. For \texttt{adults}, $Q_1 = Q_3 = 2$, so every booking with a different
+number of adults was flagged (24.9\% of rows). The extreme values that remain, such as 55 adults in a group booking or
+stays of more than 30 nights, are plausible, so they were kept.
+
+\section{Exploratory Data Analysis}
+
+Several patterns already appear before modelling. No booking with a parking request was cancelled (7,416 bookings),
+guests from Portugal cancelled 56.6\% of their bookings compared with 16.7--20.2\% for guests from Germany, France and the UK,
+and the City Hotel had a higher cancellation rate (41.7\%) than the Resort Hotel (27.8\%).
+Because the duplicates are concentrated in some groups, the three questions below are computed both on all rows and on
+the de-duplicated rows that are later used for modelling.
+
+\subsection{Question 1: Are Bookings Made Earlier More Likely to Be Cancelled?}
+On de-duplicated rows, the cancellation rate of the City Hotel rises from 10.5\% for bookings made at most 7 days ahead to
+45.7\% for bookings made 181--365 days ahead. The Resort Hotel follows the same trend up to one year (6.0\% to 35.2\%).
+The duplicates inflate the long lead times: for the City Hotel the 181--365 day group reaches 62.7\% on all rows.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_q1_lead_time.png}{Cancellation rate by lead time and hotel.}
+\caption{The cancellation rate increases with lead time: 10.5\% at $\le 7$ days and 45.7\% at 181--365 days for the City Hotel (solid lines: de-duplicated rows, dotted lines: all rows).}
+\label{fig:tab-q1}
+\end{figure}
+
+\subsection{Question 2: Why Are Non Refund Bookings Cancelled Most Often?}
+Non Refund bookings are cancelled 99.4\% of the time on all rows and still 95.0\% on de-duplicated rows, but only 992
+unique Non Refund bookings remain. Compared with bookings without deposit, they are mostly group or tour operator bookings
+(62.8\% Groups and 28.2\% Offline TA/TO), almost all from Portugal (94.9\%), and made 192 days ahead in median instead of 47.
+A likely explanation is that tour operators reserve blocks of rooms early and release them when they cannot sell them,
+so the non-refundable condition belongs to the agency contract rather than to an individual guest. The data does not
+contain a column that confirms this.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_q2_non_refund.png}{Cancellation rate by deposit type, all rows vs de-duplicated rows.}
+\caption{Non Refund bookings are still cancelled 95.0\% of the time after removing duplicates, but only 992 of the 14,587 Non Refund rows are unique.}
+\label{fig:tab-q2}
+\end{figure}
+
+\subsection{Question 3: Do Special Requests and Repeated Guests Reduce Cancellations?}
+For new guests, the cancellation rate falls from 34.7\% without any special request to 23.2\% with one request and
+16.9\% with three or more. Repeated guests cancel only 7.7\% of their bookings against 28.5\% for new guests, and they cancel
+less at every number of requests.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_q3_requests.png}{Cancellation rate by number of special requests and guest type.}
+\caption{One special request lowers the cancellation rate of new guests from 34.7\% to 23.2\%; repeated guests cancel 7.7\% compared with 28.5\% for new guests.}
+\label{fig:tab-q3}
+\end{figure}
+
+\section{Data Preprocessing}
+
+\subsection{Pipeline and Data Leakage Prevention}
+Row-wise rules (normalising text, removing duplicates and impossible values, creating \texttt{total\_nights},
+\texttt{total\_guests}, \texttt{has\_agent} and \texttt{has\_company}) were applied before the split.
+All statistics (medians, scaling parameters, category lists) are learned inside a \texttt{Pipeline} with a
+\texttt{ColumnTransformer}, so they only come from the training data, including inside cross-validation.
+
+\begin{table}[H]
+\centering
+\caption{Stratified train / validation / test split (70/15/15)}
+\label{tab:tab-split}
+\begin{tabular}{lrr}
+\toprule
+Set & Rows & Cancelled\\
+\midrule
+Train & 59,622 & 27.7\%\\
+Validation & 12,776 & 27.7\%\\
+Test & 12,777 & 27.7\%\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Encoding and Scaling}
+Numeric columns are filled with the training median and scaled with \texttt{RobustScaler}, which uses the median and IQR
+and is less affected by the long tails. Nominal columns are one-hot encoded, and categories that cover less than 1\% of
+the training rows are merged into one column, which keeps \texttt{country}, \texttt{agent} and \texttt{company} manageable.
+The arrival month is encoded with \texttt{OrdinalEncoder} in calendar order because it has a natural order.
+The final preprocessing produces 81 columns.
+
+\subsection{Comparing Missing-Value Strategies}
+Four strategies were compared with the same logistic regression model (\texttt{class\_weight="balanced"}) on the validation set.
+
+\begin{table}[H]
+\centering
+\caption{Missing-value strategies (validation, cancelled class)}
+\label{tab:tab-missing}
+\begin{tabular}{lrrrr}
+\toprule
+Strategy & Train rows & F1 & PR-AUC & ROC-AUC\\
+\midrule
+(a) Drop incomplete rows & 122 & 0.184 & 0.289 & 0.524\\
+(b) Drop \texttt{company}, median/mode & 59,622 & 0.645 & 0.655 & 0.846\\
+(c) Missing as a category + flags & 59,622 & 0.647 & 0.654 & 0.849\\
+(d) KNN imputer + category & 59,622 & 0.647 & 0.654 & 0.849\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Dropping rows is not an option because almost every row lacks \texttt{company}, leaving only 122 training rows.
+The other three strategies give almost the same scores. Strategy (c) was chosen because it does not drop any column and
+keeps the meaning of an empty cell (no agency or company). KNN gives exactly the same result as (c) because only four
+numeric cells are missing.
+
+\subsection{Outlier Handling}
+Three ways of handling the long-tailed continuous columns were compared with the same model.
+\texttt{log1p} improved PR-AUC from 0.654 to 0.674 and F1 from 0.647 to 0.667, while clipping at the 1st and 99th
+percentiles changed almost nothing (PR-AUC 0.654) because only 0.3--1\% of the rows are clipped.
+\texttt{log1p} was therefore kept. It only helps linear models, since tree models depend on the order of values only.
+
+\section{Models and Experimental Setup}
+The compared models are a majority-class baseline (\texttt{DummyClassifier}), logistic regression, a decision tree,
+a random forest and histogram gradient boosting, each with and without \texttt{class\_weight="balanced"} where available.
+All models are fitted on the training set and compared on the validation set. The best family was then used to compare
+ways of handling class imbalance and to tune hyperparameters with \texttt{RandomizedSearchCV}
+(10 combinations, 3-fold stratified cross-validation on the training set, scored by average precision).
+
+\begin{table}[H]
+\centering
+\caption{Comparison of models on the validation set (cancelled class)}
+\label{tab:tab-models}
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Precision & Recall & F1 & PR-AUC & Accuracy\\
+\midrule
+Baseline (majority class) & 0.000 & 0.000 & 0.000 & 0.277 & 0.723\\
+Logistic Regression & 0.679 & 0.531 & 0.596 & 0.683 & 0.801\\
+Logistic Regression (balanced) & 0.562 & 0.822 & 0.667 & 0.674 & 0.773\\
+Decision Tree & 0.719 & 0.576 & 0.640 & 0.701 & 0.820\\
+Random Forest & 0.741 & 0.648 & 0.692 & 0.775 & 0.840\\
+HistGradientBoosting & 0.733 & 0.637 & 0.682 & 0.779 & 0.835\\
+HistGradientBoosting (balanced) & 0.602 & 0.856 & 0.707 & 0.775 & 0.803\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tree ensembles clearly outperform logistic regression (PR-AUC around 0.78 against 0.67--0.68), which matches the
+non-linear relationships seen in the EDA. Histogram gradient boosting has the highest PR-AUC and trains much faster
+than the random forest, so it was used for the next steps.
+
+\subsection{Leakage Experiment}
+To show why the post-booking columns were removed, the same gradient boosting model was trained again with them added back.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_leakage.png}{Validation scores with and without leaked columns.}
+\caption{Adding check-in information raises PR-AUC from 0.779 to 0.793, and adding \texttt{reservation\_status} gives a perfect but meaningless 1.000.}
+\label{fig:tab-leakage}
+\end{figure}
+
+With \texttt{reservation\_status} every metric equals 1.000, because the column is the outcome itself.
+The smaller increase from \texttt{assigned\_room\_type} and \texttt{booking\_changes} is harder to notice and could easily be
+mistaken for a real improvement, but these columns do not exist when the prediction has to be made.
+
+\subsection{Handling Class Imbalance}
+\begin{table}[H]
+\centering
+\caption{Imbalance handling with HistGradientBoosting (validation, cancelled class)}
+\label{tab:tab-imbalance}
+\begin{tabular}{lrrrr}
+\toprule
+Method & Precision & Recall & F1 & PR-AUC\\
+\midrule
+No handling & 0.733 & 0.637 & 0.682 & 0.779\\
+\texttt{class\_weight="balanced"} & 0.602 & 0.856 & 0.707 & 0.775\\
+SMOTE (train only) & 0.688 & 0.712 & 0.700 & 0.770\\
+Tuned threshold (0.374) & 0.666 & 0.770 & 0.715 & 0.779\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+All three methods increase the recall of cancellations. Tuning the decision threshold with cross-validation on the training
+set gives the best F1 and keeps the PR-AUC unchanged, since the model itself does not change. Class weighting gives the highest
+recall but its precision drops to 0.602, and SMOTE has the lowest PR-AUC, probably because it interpolates one-hot columns and
+creates bookings that cannot exist.
+
+\section{Results and Evaluation}
+The final model is the tuned gradient boosting model (learning rate 0.1, 200 iterations, 31 leaf nodes, at least 100 samples
+per leaf, L2 regularisation 1.0) with a decision threshold of 0.364. It was refitted on the training and validation sets
+(72,398 rows) and evaluated once on the test set.
+
+\begin{table}[H]
+\centering
+\caption{Final model on the validation and test sets (cancelled class)}
+\label{tab:tab-results}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrrrr}
+\toprule
+Model & Set & Precision & Recall & F1 & PR-AUC & ROC-AUC & Accuracy\\
+\midrule
+Baseline & test & 0.000 & 0.000 & 0.000 & 0.277 & 0.500 & 0.723\\
+HGB tuned + threshold & validation & 0.660 & 0.782 & 0.715 & 0.783 & 0.905 & 0.828\\
+HGB tuned + threshold & test & 0.649 & 0.775 & 0.707 & 0.775 & 0.900 & 0.822\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The test scores are within 0.011 of the validation scores, so there is no sign of overfitting to the validation set.
+Compared with the baseline, PR-AUC rises from 0.277 to 0.775 and F1 from 0 to 0.707, while accuracy only goes from 72.3\% to 82.2\%.
+Out of 3,537 cancelled bookings in the test set the model detects 2,741 (77.5\%), and 1,481 of the 9,240 kept bookings (16.0\%)
+are flagged by mistake.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_confusion.png}{Confusion matrix on the test set.}
+\caption{On the test set the model detects 77.5\% of cancellations and wrongly flags 16.0\% of the bookings that were kept.}
+\label{fig:tab-confusion}
+\end{figure}
+
+The permutation importance on the test set agrees with the EDA. Shuffling \texttt{country} lowers PR-AUC by 0.162,
+followed by \texttt{lead\_time} (0.127), \texttt{agent} (0.115), \texttt{total\_of\_special\_requests} (0.108) and
+\texttt{market\_segment} (0.082). \texttt{deposit\_type} only ranks ninth (0.042) because few Non Refund bookings remain after removing duplicates.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_importance.png}{Permutation importance on the test set.}
+\caption{Country, lead time, agent and the number of special requests are the most important features, in line with the EDA.}
+\label{fig:tab-importance}
+\end{figure}
+
+The 796 missed cancellations look like low-risk bookings: their median lead time is 35 days (94 days for the detected
+cancellations) and 66.3\% of them have a special request (32.0\%). Their reasons for cancelling, such as a change of plans
+or illness, are not recorded in the booking data, which limits what any model can learn from it.
+
+\section{Question-Driven Figure}
+\textbf{Question:} Does handling class imbalance improve the recall of cancelled bookings?
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_imbalance.png}{Precision, recall, F1 and PR-AUC for the four imbalance strategies.}
+\caption{Handling imbalance raises the recall of cancellations from 0.637 to 0.856 with class weights and to 0.770 with a tuned threshold; the tuned threshold gives the best F1 (0.715) without lowering PR-AUC.}
+\label{fig:tab-creative}
+\end{figure}
+
+Yes. Without any handling, the model misses 36.3\% of the cancelled bookings in the validation set. With a threshold of 0.374
+it misses 23.0\% and still keeps a precision of 0.666. For a hotel, a false alarm usually costs a confirmation call, while a
+missed cancellation can leave a room empty, so trading some precision for recall is reasonable here.
+
+\section{Limitations and Future Work}
+\begin{itemize}[leftmargin=1.5cm]
+    \item The data covers only two hotels in Portugal with arrivals from 2015 to 2017, so the results may not transfer to
+          other hotels or to the period after COVID.
+    \item Without a booking ID, duplicated entries cannot be separated from rooms of the same group. Removing duplicates
+          changes the cancellation rate from 37.0\% to 27.7\%.
+    \item \texttt{country} may partly be updated at check-in. If so, cancelled bookings would more often have an empty or default
+          country, which could explain part of its importance. This could not be verified with the available data.
+    \item The split is random rather than chronological, so the test score may be optimistic for predicting future bookings.
+    \item Future work: a chronological split (train on 2015--2016, test on 2017), a check of \texttt{country} by removing it,
+          a threshold chosen from the actual costs of empty rooms and confirmation calls, and SMOTENC instead of SMOTE.
+\end{itemize}
+
+\section{References}
+\begin{itemize}[leftmargin=1.5cm]
+    \item N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets}, Data in Brief 22 (2019) 41--49. CC BY 4.0.
+    \item R for Data Science Online Learning Community, \textit{TidyTuesday 2020-02-11: Hotels},
+          \url{https://github.com/rfordatascience/tidytuesday}.
+    \item F. Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, JMLR 12 (2011) 2825--2830.
+    \item G. Lemaître, F. Nogueira, C. K. Aridas, \textit{Imbalanced-learn: A Python Toolbox to Tackle the Curse of Imbalanced
+          Datasets in Machine Learning}, JMLR 18 (2017) 1--5.
+\end{itemize}
+
+\fussy
