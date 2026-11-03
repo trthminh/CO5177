@@ -5,3 +5,27 @@ data/
 __pycache__/
 .ipynb_checkpoints/
 .venv/
+
+# LaTeX: file trung gian khi biên dịch latex/ (PDF nộp đặt ở reports/)
+latex/**/build/
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.fls
+*.fdb_latexmk
+*.xdv
+*.synctex.gz
+
+# LaTeX: PDF biên dịch tại chỗ và file khóa tạm của SyncTeX (bản nộp copy sang reports/)
+latex/*.pdf
+latex/standalone/*.pdf
+*.synctex(busy)
+
+# Dữ liệu: chỉ để trong notebooks/data/ (đã ignore ở trên); chặn thêm để không push nhầm file dữ liệu
+*.csv
+*.zip
+*.parquet
+

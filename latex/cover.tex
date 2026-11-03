@@ -1,0 +1,32 @@
+\begin{titlepage}
+    \centering
+    {\large\bfseries \schoolname\par}
+    {\large\bfseries \facultyname\par}
+    \vspace{1cm}
+    \IfFileExists{\reportroot figures/hcmut-logo.png}{\includegraphics[height=3.5cm]{hcmut-logo.png}\par}{}
+    \vspace{1cm}
+    {\large Course: \coursecode{} -- \coursename\par}
+    {\large \semester\par}
+    \vspace{1.8cm}
+    {\Huge\bfseries \reporttype\par}
+    \vspace{0.8cm}
+    {\LARGE \reportsubtitle\par}
+    \vspace{0.5cm}
+    {\large \datafamily\par}
+    \vspace{1.8cm}
+    \begin{tabular}{@{}ll@{}}
+        \textbf{Group:} & \groupname\\
+        \textbf{Lecturer:} & \lecturer\\
+        \textbf{Landing page:} & \url{\landingpage}\\
+    \end{tabular}
+    \par\vspace{0.6cm}
+    \begin{tabular}{lll}
+        \toprule
+        \textbf{Name} & \textbf{Student ID} & \textbf{Project}\\
+        \midrule
+        \members
+        \bottomrule
+    \end{tabular}
+    \vfill
+    {\large \reportdate\par}
+\end{titlepage}
