@@ -112,7 +112,7 @@ window.SITE_DATA = {
       },
       owner: "Trương Thanh Minh",
       status: "in-progress",
-      links: { notebook: "notebooks/timeseries.ipynb", report: null, video: null },
+      links: { notebook: "notebooks/timeseries.ipynb", report: "reports/timeseries-report.pdf", video: null },
       results: [
         { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "131.5" },
         { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs naive (MAE)", value: "+77.4%" },

@@ -5,7 +5,6 @@ data/
 __pycache__/
 .ipynb_checkpoints/
 .venv/
-latex/
 # LaTeX: file trung gian khi biên dịch latex/ (PDF nộp đặt ở reports/)
 latex/**/build/
 *.aux

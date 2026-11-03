@@ -250,7 +250,7 @@ và một giờ bị đánh dấu khi $|z_t| > 3.5$ (ngưỡng Iglewicz--Hoaglin
 \centering
 \caption{Rolling mean/std so với rolling median/MAD trên giai đoạn nghiên cứu}
 \label{tab:ts-outlier}
-\begin{tabular}{lrrr}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedleft\arraybackslash}p{3.2cm}>{\raggedleft\arraybackslash}p{3.2cm}>{\raggedleft\arraybackslash}p{3.2cm}}
 \toprule
 Phương pháp & Số giờ bị đánh dấu & Giờ đóng đường bắt được (/14) & Giờ bị đánh dấu vào ngày lễ\\
 \midrule
@@ -309,6 +309,7 @@ một dòng train, và mô hình sẽ được chấm điểm trên những giá
 \centering
 \caption{Chia theo thời gian (không xáo trộn)}
 \label{tab:ts-split}
+\small
 \begin{tabular}{llrrrr}
 \toprule
 Tập & Giai đoạn & Số dòng & TB (xe/giờ) & \% nội suy & \% giờ có tuyết\\
@@ -388,6 +389,7 @@ các giờ nội suy bị loại khỏi mọi phép tính điểm, và MAPE ch�
 \centering
 \caption{So sánh các mô hình chuỗi thời gian trên tập validation (12/2017 -- 04/2018)}
 \label{tab:ts-val}
+\small
 \begin{tabular}{lrrrrr}
 \toprule
 Mô hình & MAE & RMSE & MAPE (\%) & $R^2$ & Skill so với naive\\
@@ -428,6 +430,7 @@ của HistGradientBoosting 2\%, từ 175 xuống 172: cấu hình mặc định 
 \centering
 \caption{Mô hình cuối cùng trên tập test (05/2018 -- 09/2018, chỉ các giờ có dữ liệu thật)}
 \label{tab:ts-results}
+\small
 \begin{tabular}{lrrrrr}
 \toprule
 Mô hình & MAE & RMSE & MAPE (\%) & $R^2$ & Skill so với naive\\
