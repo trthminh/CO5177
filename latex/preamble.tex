@@ -1,6 +1,6 @@
 \usepackage{fontspec}
 \usepackage{polyglossia}
-\setdefaultlanguage{english}
+\setdefaultlanguage{vietnamese}
 % Load by file name so MiKTeX/Overleaf can find (and auto-install) tex-gyre
 \setmainfont{texgyretermes}[
     Extension      = .otf,
@@ -41,26 +41,26 @@
 \graphicspath{{\reportroot figures/}}
 
 % Group info, keep in sync with assets/js/data.js
-\newcommand{\schoolname}{HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY -- VNU-HCM}
-\newcommand{\facultyname}{FACULTY OF COMPUTER SCIENCE AND ENGINEERING}
+\newcommand{\schoolname}{TRƯỜNG ĐẠI HỌC BÁCH KHOA -- ĐHQG-HCM}
+\newcommand{\facultyname}{KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
 \newcommand{\coursecode}{CO5177}
-\newcommand{\coursename}{Programming Foundations for Data Analysis and Visualization}
-\newcommand{\semester}{Semester 261, Academic Year 2026--2027}
+\newcommand{\coursename}{Nền tảng lập trình cho phân tích và trực quan dữ liệu}
+\newcommand{\semester}{Học kỳ 261, năm học 2026--2027}
 \newcommand{\groupname}{DataInsight}
 \newcommand{\members}{%
-    Trương Thanh Minh & 2580893 & Time series\\
-    Tô Anh Phát & 2580894 & Text\\
-    Trần Lê Hoàng Long & 2570443 & Tabular\\
+    Trương Thanh Minh & 2580893 & Chuỗi thời gian (Time series)\\
+    Tô Anh Phát & 2580894 & Văn bản (Text)\\
+    Trần Lê Hoàng Long & 2570443 & Dữ liệu bảng (Tabular)\\
 }
 \newcommand{\lecturer}{Lê Thành Sách}
 \newcommand{\landingpage}{https://trthminh.github.io/CO5177/}
-\newcommand{\reporttype}{REPORT}
-\newcommand{\reportsubtitle}{Project title}
-\newcommand{\datafamily}{Data type}
-\newcommand{\reportdate}{Ho Chi Minh City, October 2026}
+\newcommand{\reporttype}{BÁO CÁO}
+\newcommand{\reportsubtitle}{Tên đề tài}
+\newcommand{\datafamily}{Loại dữ liệu}
+\newcommand{\reportdate}{TP. Hồ Chí Minh, tháng 11 năm 2026}
 
 % Shows a placeholder box until the figure exists in figures/
 \newcommand{\figureplaceholder}[2]{%
   \IfFileExists{\reportroot figures/#1}{\includegraphics[width=0.92\textwidth]{#1}}%
-  {\fbox{\parbox[c][4cm][c]{0.88\textwidth}{\centering Insert figure at \texttt{\detokenize{figures/#1}}\\#2}}}%
+  {\fbox{\parbox[c][4cm][c]{0.88\textwidth}{\centering Chèn hình tại \texttt{\detokenize{figures/#1}}\\#2}}}%
 }
