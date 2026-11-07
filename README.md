@@ -37,6 +37,7 @@ notebooks/templates/     Template notebook cho từng loại dữ liệu + quy c
 latex/                   Mã nguồn báo cáo LaTeX (XeLaTeX, xem latex/README.md)
 reports/                 PDF report từng bài
 scripts/check_links.py   Kiểm tra link trước khi nộp
+CROSS_CHECK.md           Tiêu chí kiểm tra chéo notebook, report và landing page giữa các thành viên
 ```
 
 ## Cập nhật nội dung
