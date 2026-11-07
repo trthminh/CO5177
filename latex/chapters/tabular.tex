@@ -1,332 +1,351 @@
-\chapter{Tabular Data Analysis}
+\chapter{Phân tích dữ liệu dạng bảng}
 \label{chap:tabular}
-% Tabular chapter, owner: Trần Lê Hoàng Long
-% Numbers come from notebooks/tabular.ipynb (Colab run); figures are exported from the same run
-\sloppy % long column names in \texttt cannot be hyphenated; \fussy at the end of the chapter restores the default
+% Chương Tabular, phụ trách: Trần Lê Hoàng Long
+% Số liệu lấy từ notebooks/tabular.ipynb (lần chạy cuối trên Colab); hình xuất từ cùng lần chạy
+\sloppy % tên cột dài trong \texttt không ngắt dòng được; \fussy ở cuối chương trả lại mặc định
 
-\section{Problem and Objectives}
-When a booking is cancelled close to the arrival date, the hotel usually cannot sell the room again.
-If the hotel knows in advance which bookings are likely to be cancelled, it can call the guest to confirm,
-ask for a deposit or accept a few extra bookings to fill the gap.
-This chapter predicts whether a hotel booking will be cancelled (\texttt{is\_canceled} = 1) using only the
-information that is available when the booking is made, such as lead time, length of stay, number of guests,
-sales channel, deposit type, price and the guest's history.
+\section{Bài toán và mục tiêu}
+Khi khách hủy phòng sát ngày đến, khách sạn thường không kịp bán lại phòng đó. Nếu biết trước booking nào dễ bị hủy,
+khách sạn có thể gọi điện xác nhận, yêu cầu đặt cọc hoặc nhận thêm một vài booking để bù vào.
+Chương này dự đoán một booking có bị hủy hay không (\texttt{is\_canceled} = 1) chỉ dựa trên những thông tin có tại lúc khách đặt phòng,
+gồm số ngày đặt trước, số đêm, số khách, kênh bán, loại đặt cọc, giá phòng và lịch sử của khách.
 
-Since only part of the bookings are cancelled, models are compared mainly by the PR-AUC (average precision)
-and the F1-score of the cancelled class on the validation set. Accuracy is reported only for reference.
+Số booking bị hủy ít hơn hẳn số booking không hủy, nên độ chính xác (accuracy) không phản ánh đúng khả năng phát hiện booking hủy.
+Các mô hình vì vậy được so sánh chủ yếu bằng \textbf{PR-AUC} (average precision) và \textbf{F1 của lớp hủy} trên tập validation;
+accuracy chỉ để tham khảo. Mô hình được chọn chỉ được đánh giá một lần trên tập test.
 
-\section{Dataset}
+\section{Tập dữ liệu}
 \begin{itemize}[leftmargin=1.5cm]
-    \item Name: Hotel Booking Demand (TidyTuesday 2020-02-11 version, identical to the Kaggle copy).
-    \item URL: \url{https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11}
-    \item Source: property management systems of two hotels in Portugal, a resort hotel in the Algarve (H1, 40,060 bookings)
-          and a city hotel in Lisbon (H2, 79,330 bookings), arrivals from July 2015 to August 2017.
-    \item Size: 119,390 rows, 32 columns; one row is one booking.
-    \item Target: \texttt{is\_canceled} (37.0\% cancelled in the raw data).
-    \item Missing values: 129,425 cells, in \texttt{company} (94.3\%), \texttt{agent} (13.7\%), \texttt{country} (0.4\%)
-          and \texttt{children} (4 cells).
-    \item License / citation: N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets},
-          Data in Brief 22 (2019) 41--49, CC BY 4.0.
+    \item Tên: Hotel Booking Demand, bản TidyTuesday ngày 11/02/2020 (giống hệt bản trên Kaggle).
+    \item Nguồn: \url{https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11};
+          notebook tải trực tiếp file \texttt{hotels.csv} nên không cần API key.
+    \item Thu thập: trích từ hệ thống quản lý khách sạn (PMS) của hai khách sạn ở Bồ Đào Nha, một resort ở vùng Algarve
+          (H1, 40.060 booking) và một khách sạn trong thành phố Lisbon (H2, 79.330 booking), gồm mọi booking có ngày đến
+          từ tháng 7/2015 đến tháng 8/2017, kể cả booking đã hủy. Thông tin nhận dạng khách hàng đã bị xóa.
+    \item Kích thước: 119.390 dòng, 32 cột; mỗi dòng là một booking.
+    \item Biến mục tiêu: \texttt{is\_canceled}, 37,0\% booking bị hủy trên dữ liệu gốc.
+    \item Giá trị thiếu: 129.425 ô, nằm ở \texttt{company} (94,3\%), \texttt{agent} (13,7\%), \texttt{country} (0,4\%)
+          và \texttt{children} (4 ô).
+    \item Giấy phép và trích dẫn: CC BY 4.0. N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets},
+          Data in Brief 22 (2019) 41--49.
 \end{itemize}
 
-Each column was checked to see whether it is known at the time of booking.
-Four columns are only recorded later and were removed: \texttt{reservation\_status} and \texttt{reservation\_status\_date}
-(they are the outcome itself), \texttt{assigned\_room\_type} (known at check-in) and \texttt{booking\_changes}
-(counted until check-in or cancellation). \texttt{arrival\_date\_year} was also removed because it only covers 2015--2017.
-The remaining 26 features consist of 15 numeric and 11 categorical columns; \texttt{agent} and \texttt{company}
-are stored as numbers but are treated as categorical because they are IDs.
+\textbf{Chọn cột theo thời điểm dự đoán.} Từng cột được kiểm tra xem đã có tại lúc đặt phòng hay chỉ được ghi sau đó.
+Bốn cột chỉ có sau khi đặt nên bị loại: \texttt{reservation\_status} và \texttt{reservation\_status\_date} (chính là kết quả hủy hay không
+và ngày ghi kết quả), \texttt{assigned\_room\_type} (loại phòng thực nhận lúc check-in) và \texttt{booking\_changes}
+(số lần sửa booking cho đến lúc check-in hoặc hủy). \texttt{arrival\_date\_year} cũng bị loại vì chỉ gồm các năm 2015--2017,
+không dùng được cho năm sau. Còn lại 26 đặc trưng gồm 15 cột số và 11 cột phân loại; \texttt{agent} và \texttt{company}
+lưu dưới dạng số nhưng là mã ID của đại lý và công ty, nên được xếp vào nhóm phân loại.
 
-\section{Data Quality Checks}
+\section{Kiểm tra chất lượng dữ liệu}
 \begin{table}[H]
 \centering
-\caption{Data quality issues and how they were handled}
+\caption{Các vấn đề chất lượng dữ liệu và cách xử lý}
 \label{tab:tab-quality}
 \begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.6cm}}
 \toprule
-Issue & Size & Handling\\
+Vấn đề & Quy mô & Cách xử lý\\
 \midrule
-Missing \texttt{company}, \texttt{agent} & 94.3\% and 13.7\% of rows & Kept as a separate \texttt{"missing"} category, plus \texttt{has\_company}, \texttt{has\_agent} flags\\
-Missing \texttt{country}, \texttt{children} & 488 and 4 cells & Same category approach; \texttt{children} filled with the train median\\
-Exact duplicate rows & 31,994 rows (26.8\%); 34,050 after removing the dropped columns & Removed before splitting\\
-Negative or extreme \texttt{adr} & 1 row at $-6.38$, 1 row at 5,400 & Removed (valid range 0--1,000)\\
-Bookings with no guests & 180 rows & Removed with a multi-column rule\\
-\texttt{meal = Undefined} & 1,169 rows & Merged with \texttt{SC} (no meal package)\\
-Long right tails (\texttt{lead\_time}, \texttt{adr}, stays) & up to 737 days, 50 nights & Kept; \texttt{log1p} and \texttt{RobustScaler}\\
+Thiếu \texttt{company}, \texttt{agent} & 94,3\% và 13,7\% số dòng & Giữ thành một giá trị riêng \texttt{"missing"}, thêm hai cột cờ \texttt{has\_company}, \texttt{has\_agent}\\
+Thiếu \texttt{country}, \texttt{children} & 488 và 4 ô & Cùng cách trên; riêng \texttt{children} điền bằng median của tập train\\
+Dòng trùng hoàn toàn & 31.994 dòng (26,8\%); 34.050 dòng khi bỏ các cột bị loại & Bỏ trước khi chia tập\\
+\texttt{adr} âm hoặc quá lớn & 1 dòng $-6{,}38$, 1 dòng 5.400 & Bỏ (khoảng hợp lệ 0--1.000)\\
+Booking không có khách & 180 dòng & Bỏ bằng quy tắc trên nhiều cột\\
+\texttt{meal = Undefined} & 1.169 dòng & Gộp với \texttt{SC} (không có gói ăn)\\
+Đuôi phải dài (\texttt{lead\_time}, \texttt{adr}, số đêm) & tới 737 ngày, 50 đêm & Giữ nguyên; dùng \texttt{log1p} và \texttt{RobustScaler}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Missing values are not random in this dataset. Bookings without a company were cancelled 38.2\% of the time,
-compared with 17.5\% for bookings with a company, while bookings without an agent were cancelled 24.7\% of the time
-against 39.0\% for those with an agent. An empty \texttt{agent} or \texttt{company} simply means that the booking was not
-made through an agency or a company, so these cells were kept as information instead of being filled in.
+\textbf{Giá trị thiếu.} Việc thiếu dữ liệu ở đây không xảy ra ngẫu nhiên. Booking không có \texttt{company} bị hủy 38,2\%,
+trong khi booking có \texttt{company} chỉ hủy 17,5\%. Với \texttt{agent} thì ngược lại: không qua đại lý hủy 24,7\%, có đại lý hủy 39,0\%.
+Ô trống ở \texttt{agent} hay \texttt{company} thực chất có nghĩa là booking không đặt qua đại lý hoặc công ty nào,
+nên các ô này được giữ lại như một loại thông tin thay vì điền bằng giá trị khác.
 
-The duplicates deserve attention. The dataset has no booking ID, so several identical rooms booked by one group become
-identical rows. The duplicate copies are very different from the rest: 63.1\% of them were cancelled (27.5\% for the other rows),
-42.3\% are Non Refund (1.2\%) and 46.5\% belong to the Groups segment (5.7\%). In fact 13,549 of the 14,587 Non Refund
-bookings are duplicates. Keeping them would place the same booking in both training and test data, so they were removed.
-After cleaning, 85,175 bookings remain and the cancellation rate drops from 37.0\% to 27.7\%.
+\textbf{Dòng trùng.} Dataset không có mã booking, nên khi một đoàn đặt nhiều phòng giống nhau thì các phòng đó trở thành
+nhiều dòng giống hệt nhau. Các bản sao khác hẳn phần còn lại: 63,1\% bị hủy (so với 27,5\%), 42,3\% là Non Refund (so với 1,2\%)
+và 46,5\% thuộc phân khúc Groups (so với 5,7\%). Có tới 13.549 trong 14.587 booking Non Refund là bản sao.
+Nếu giữ lại, cùng một booking có thể nằm ở cả tập train và tập test, làm kết quả đánh giá cao hơn thực tế, nên các dòng trùng bị bỏ.
+Sau khi làm sạch còn 85.175 booking và tỷ lệ hủy giảm từ 37,0\% xuống 27,7\%.
 
-The IQR rule was not useful for the count columns. For \texttt{adults}, $Q_1 = Q_3 = 2$, so every booking with a different
-number of adults was flagged (24.9\% of rows). The extreme values that remain, such as 55 adults in a group booking or
-stays of more than 30 nights, are plausible, so they were kept.
+\textbf{Outlier.} Quy tắc IQR không phù hợp với các cột đếm. Ví dụ ở \texttt{adults}, $Q_1 = Q_3 = 2$ nên mọi booking
+không phải 2 người lớn đều bị coi là outlier (24,9\% số dòng). Các giá trị lớn còn lại như booking đoàn 55 người lớn
+hay booking ở hơn 30 đêm vẫn có thể xảy ra, nên được giữ nguyên.
 
-\section{Exploratory Data Analysis}
+\section{Phân tích khám phá (EDA)}
+Một số quy luật đã thấy rõ trước khi xây dựng mô hình. Trong 7.416 booking có yêu cầu chỗ đỗ xe, không có booking nào bị hủy.
+Khách Bồ Đào Nha hủy 56,6\% số booking, gấp khoảng ba lần khách Đức, Pháp và Anh (16,7--20,2\%),
+và City Hotel có tỷ lệ hủy cao hơn Resort Hotel (41,7\% so với 27,8\%).
+Vì dòng trùng tập trung ở một số nhóm, ba câu hỏi dưới đây được tính trên cả toàn bộ dữ liệu và dữ liệu đã bỏ trùng,
+tức dữ liệu dùng để huấn luyện mô hình về sau.
 
-Several patterns already appear before modelling. No booking with a parking request was cancelled (7,416 bookings),
-guests from Portugal cancelled 56.6\% of their bookings compared with 16.7--20.2\% for guests from Germany, France and the UK,
-and the City Hotel had a higher cancellation rate (41.7\%) than the Resort Hotel (27.8\%).
-Because the duplicates are concentrated in some groups, the three questions below are computed both on all rows and on
-the de-duplicated rows that are later used for modelling.
-
-\subsection{Question 1: Are Bookings Made Earlier More Likely to Be Cancelled?}
-On de-duplicated rows, the cancellation rate of the City Hotel rises from 10.5\% for bookings made at most 7 days ahead to
-45.7\% for bookings made 181--365 days ahead. The Resort Hotel follows the same trend up to one year (6.0\% to 35.2\%).
-The duplicates inflate the long lead times: for the City Hotel the 181--365 day group reaches 62.7\% on all rows.
+\subsection{Câu hỏi 1: Đặt phòng càng sớm thì càng dễ hủy?}
+Trên dữ liệu đã bỏ trùng, tỷ lệ hủy của City Hotel tăng từ 10,5\% với booking đặt trước tối đa 7 ngày lên 45,7\%
+với booking đặt trước 181--365 ngày. Resort Hotel có cùng xu hướng trong khoảng một năm (từ 6,0\% lên 35,2\%).
+Dòng trùng làm các nhóm đặt sớm bị phóng đại: nếu tính trên toàn bộ dữ liệu, nhóm 181--365 ngày ở City Hotel lên tới 62,7\%.
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_q1_lead_time.png}{Cancellation rate by lead time and hotel.}
-\caption{The cancellation rate increases with lead time: 10.5\% at $\le 7$ days and 45.7\% at 181--365 days for the City Hotel (solid lines: de-duplicated rows, dotted lines: all rows).}
+\figureplaceholder{tabular/tabular_q1_lead_time.png}{Tỷ lệ hủy theo thời gian đặt trước và khách sạn.}
+\caption{Tỷ lệ hủy tăng theo thời gian đặt trước: ở City Hotel là 10,5\% khi đặt trước tối đa 7 ngày và 45,7\% khi đặt trước 181--365 ngày (đường liền: dữ liệu đã bỏ trùng, đường chấm: toàn bộ dữ liệu).}
 \label{fig:tab-q1}
 \end{figure}
 
-\subsection{Question 2: Why Are Non Refund Bookings Cancelled Most Often?}
-Non Refund bookings are cancelled 99.4\% of the time on all rows and still 95.0\% on de-duplicated rows, but only 992
-unique Non Refund bookings remain. Compared with bookings without deposit, they are mostly group or tour operator bookings
-(62.8\% Groups and 28.2\% Offline TA/TO), almost all from Portugal (94.9\%), and made 192 days ahead in median instead of 47.
-A likely explanation is that tour operators reserve blocks of rooms early and release them when they cannot sell them,
-so the non-refundable condition belongs to the agency contract rather than to an individual guest. The data does not
-contain a column that confirms this.
+Như vậy thời gian đặt trước liên hệ rõ với việc hủy phòng, nhưng quan hệ này không tuyến tính và khác nhau giữa hai khách sạn.
+Đây là lý do các mô hình dạng cây được kỳ vọng cho kết quả tốt hơn mô hình tuyến tính.
+
+\subsection{Câu hỏi 2: Vì sao booking Non Refund lại bị hủy nhiều nhất?}
+Thông thường khách đã trả tiền không hoàn lại sẽ ít hủy, nhưng trong dữ liệu booking Non Refund bị hủy 99,4\%.
+Sau khi bỏ trùng tỷ lệ này vẫn là 95,0\%, nhưng chỉ còn 992 booking. So với booking không đặt cọc, phần lớn là khách đoàn
+hoặc khách qua hãng lữ hành (62,8\% Groups và 28,2\% Offline TA/TO), gần như toàn bộ là khách Bồ Đào Nha (94,9\%),
+và đặt trước trung vị 192 ngày thay vì 47 ngày. Có thể đây là các công ty lữ hành giữ phòng từ sớm rồi trả lại khi không bán hết,
+khi đó điều khoản không hoàn tiền nằm trong hợp đồng với đại lý chứ không phải khách lẻ đã thanh toán.
+Dữ liệu không có cột nào xác nhận trực tiếp giả thuyết này.
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_q2_non_refund.png}{Cancellation rate by deposit type, all rows vs de-duplicated rows.}
-\caption{Non Refund bookings are still cancelled 95.0\% of the time after removing duplicates, but only 992 of the 14,587 Non Refund rows are unique.}
+\figureplaceholder{tabular/tabular_q2_non_refund.png}{Tỷ lệ hủy theo loại đặt cọc, toàn bộ dữ liệu và dữ liệu đã bỏ trùng.}
+\caption{Booking Non Refund vẫn bị hủy 95,0\% sau khi bỏ trùng, nhưng chỉ 992 trong 14.587 dòng Non Refund là không trùng.}
 \label{fig:tab-q2}
 \end{figure}
 
-\subsection{Question 3: Do Special Requests and Repeated Guests Reduce Cancellations?}
-For new guests, the cancellation rate falls from 34.7\% without any special request to 23.2\% with one request and
-16.9\% with three or more. Repeated guests cancel only 7.7\% of their bookings against 28.5\% for new guests, and they cancel
-less at every number of requests.
+\subsection{Câu hỏi 3: Yêu cầu đặc biệt và khách quen có làm giảm hủy phòng?}
+Với khách mới, tỷ lệ hủy giảm từ 34,7\% khi không có yêu cầu đặc biệt nào xuống 23,2\% khi có một yêu cầu và 16,9\% khi có
+từ ba yêu cầu trở lên. Khách quen chỉ hủy 7,7\% so với 28,5\% ở khách mới, và hủy ít hơn ở mọi mức số yêu cầu.
+Dòng trùng chỉ ảnh hưởng tới nhóm không có yêu cầu đặc biệt (47,7\% trên toàn bộ dữ liệu so với 33,6\% sau khi bỏ trùng),
+cho thấy các bản sao hầu hết là booking không có yêu cầu nào.
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_q3_requests.png}{Cancellation rate by number of special requests and guest type.}
-\caption{One special request lowers the cancellation rate of new guests from 34.7\% to 23.2\%; repeated guests cancel 7.7\% compared with 28.5\% for new guests.}
+\figureplaceholder{tabular/tabular_q3_requests.png}{Tỷ lệ hủy theo số yêu cầu đặc biệt và loại khách.}
+\caption{Chỉ một yêu cầu đặc biệt đã làm tỷ lệ hủy của khách mới giảm từ 34,7\% xuống 23,2\%; khách quen hủy 7,7\% so với 28,5\% ở khách mới.}
 \label{fig:tab-q3}
 \end{figure}
 
-\section{Data Preprocessing}
+\section{Tiền xử lý dữ liệu}
 
-\subsection{Pipeline and Data Leakage Prevention}
-Row-wise rules (normalising text, removing duplicates and impossible values, creating \texttt{total\_nights},
-\texttt{total\_guests}, \texttt{has\_agent} and \texttt{has\_company}) were applied before the split.
-All statistics (medians, scaling parameters, category lists) are learned inside a \texttt{Pipeline} with a
-\texttt{ColumnTransformer}, so they only come from the training data, including inside cross-validation.
+\subsection{Pipeline và chống rò rỉ dữ liệu}
+Các quy tắc xử lý theo từng dòng (chuẩn hóa chữ, bỏ dòng trùng và giá trị vô lý, tạo \texttt{total\_nights},
+\texttt{total\_guests}, \texttt{has\_agent} và \texttt{has\_company}) được thực hiện trước khi chia tập vì chúng không dùng
+thông tin của các dòng khác. Các thống kê như median để điền giá trị thiếu, tham số chuẩn hóa hay danh sách giá trị cho one-hot
+được học trong \texttt{Pipeline} với \texttt{ColumnTransformer}, nên chỉ lấy từ tập train, kể cả khi chạy cross-validation.
 
 \begin{table}[H]
 \centering
-\caption{Stratified train / validation / test split (70/15/15)}
+\caption{Chia train / validation / test theo tỷ lệ 70/15/15, có phân tầng theo nhãn}
 \label{tab:tab-split}
 \begin{tabular}{lrr}
 \toprule
-Set & Rows & Cancelled\\
+Tập & Số dòng & Tỷ lệ hủy\\
 \midrule
-Train & 59,622 & 27.7\%\\
-Validation & 12,776 & 27.7\%\\
-Test & 12,777 & 27.7\%\\
+Train & 59.622 & 27,7\%\\
+Validation & 12.776 & 27,7\%\\
+Test & 12.777 & 27,7\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Encoding and Scaling}
-Numeric columns are filled with the training median and scaled with \texttt{RobustScaler}, which uses the median and IQR
-and is less affected by the long tails. Nominal columns are one-hot encoded, and categories that cover less than 1\% of
-the training rows are merged into one column, which keeps \texttt{country}, \texttt{agent} and \texttt{company} manageable.
-The arrival month is encoded with \texttt{OrdinalEncoder} in calendar order because it has a natural order.
-The final preprocessing produces 81 columns.
+\subsection{Mã hóa và chuẩn hóa}
+Cột số được điền bằng median của tập train và chuẩn hóa bằng \texttt{RobustScaler}; cách này dùng median và IQR nên ít bị ảnh hưởng
+bởi các giá trị lớn ở đuôi phân phối. Cột phân loại được mã hóa one-hot, những giá trị chiếm dưới 1\% tập train được gộp thành một cột,
+nhờ đó \texttt{country}, \texttt{agent} và \texttt{company} không sinh ra hàng trăm cột. Tháng đến có thứ tự tự nhiên nên được mã hóa
+bằng \texttt{OrdinalEncoder} theo thứ tự tháng. Sau tiền xử lý có 81 cột đầu vào cho mô hình.
 
-\subsection{Comparing Missing-Value Strategies}
-Four strategies were compared with the same logistic regression model (\texttt{class\_weight="balanced"}) on the validation set.
+\subsection{So sánh các cách xử lý giá trị thiếu}
+Bốn cách được so sánh trên tập validation, cùng dùng mô hình Logistic Regression với \texttt{class\_weight="balanced"} để kết quả chỉ khác nhau ở cách xử lý giá trị thiếu.
 
 \begin{table}[H]
 \centering
-\caption{Missing-value strategies (validation, cancelled class)}
+\caption{So sánh các cách xử lý giá trị thiếu (validation, lớp hủy)}
 \label{tab:tab-missing}
 \begin{tabular}{lrrrr}
 \toprule
-Strategy & Train rows & F1 & PR-AUC & ROC-AUC\\
+Cách xử lý & Số dòng train & F1 & PR-AUC & ROC-AUC\\
 \midrule
-(a) Drop incomplete rows & 122 & 0.184 & 0.289 & 0.524\\
-(b) Drop \texttt{company}, median/mode & 59,622 & 0.645 & 0.655 & 0.846\\
-(c) Missing as a category + flags & 59,622 & 0.647 & 0.654 & 0.849\\
-(d) KNN imputer + category & 59,622 & 0.647 & 0.654 & 0.849\\
+(a) Bỏ các dòng bị thiếu & 122 & 0,184 & 0,289 & 0,524\\
+(b) Bỏ cột \texttt{company}, điền median/mode & 59.622 & 0,645 & 0,655 & 0,846\\
+(c) Coi giá trị thiếu là một nhóm + cột cờ & 59.622 & 0,647 & 0,654 & 0,849\\
+(d) KNNImputer + nhóm riêng & 59.622 & 0,647 & 0,654 & 0,849\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Dropping rows is not an option because almost every row lacks \texttt{company}, leaving only 122 training rows.
-The other three strategies give almost the same scores. Strategy (c) was chosen because it does not drop any column and
-keeps the meaning of an empty cell (no agency or company). KNN gives exactly the same result as (c) because only four
-numeric cells are missing.
+Cách bỏ dòng gần như không dùng được: hầu hết các dòng đều thiếu \texttt{company} nên chỉ còn 122 dòng để huấn luyện,
+và PR-AUC chỉ bằng 0,289, sát với tỷ lệ hủy. Ba cách còn lại cho kết quả gần như nhau. Cách (c) được chọn vì không phải bỏ cột nào
+và giữ được ý nghĩa của ô trống là booking không qua đại lý hay công ty. KNN cho kết quả trùng với (c) vì trong các cột số
+chỉ có 4 ô bị thiếu.
 
-\subsection{Outlier Handling}
-Three ways of handling the long-tailed continuous columns were compared with the same model.
-\texttt{log1p} improved PR-AUC from 0.654 to 0.674 and F1 from 0.647 to 0.667, while clipping at the 1st and 99th
-percentiles changed almost nothing (PR-AUC 0.654) because only 0.3--1\% of the rows are clipped.
-\texttt{log1p} was therefore kept. It only helps linear models, since tree models depend on the order of values only.
+\subsection{Xử lý outlier}
+Ba cách xử lý các cột liên tục có đuôi dài được so sánh trên cùng mô hình: giữ nguyên, lấy \texttt{log1p}, và cắt tại phân vị 1\% và 99\%
+của tập train. \texttt{log1p} làm PR-AUC tăng từ 0,654 lên 0,674 và F1 từ 0,647 lên 0,667, còn cắt ngưỡng gần như không thay đổi gì
+(PR-AUC 0,654) vì chỉ 0,3--1\% số dòng bị cắt. Do đó \texttt{log1p} được giữ lại. Cách này chủ yếu giúp mô hình tuyến tính,
+vì mô hình cây chỉ dựa vào thứ tự giá trị.
 
-\section{Models and Experimental Setup}
-The compared models are a majority-class baseline (\texttt{DummyClassifier}), logistic regression, a decision tree,
-a random forest and histogram gradient boosting, each with and without \texttt{class\_weight="balanced"} where available.
-All models are fitted on the training set and compared on the validation set. The best family was then used to compare
-ways of handling class imbalance and to tune hyperparameters with \texttt{RandomizedSearchCV}
-(10 combinations, 3-fold stratified cross-validation on the training set, scored by average precision).
+\section{Mô hình và thiết lập thí nghiệm}
+Các mô hình được so sánh gồm một baseline luôn đoán lớp đa số (\texttt{DummyClassifier}), Logistic Regression, Decision Tree,
+Random Forest và HistGradientBoosting, cùng các phiên bản có \texttt{class\_weight="balanced"}. Tất cả được huấn luyện trên tập train
+và so sánh trên tập validation. Họ mô hình tốt nhất sau đó được dùng để so sánh các cách xử lý mất cân bằng lớp và tinh chỉnh
+siêu tham số bằng \texttt{RandomizedSearchCV} (10 tổ hợp, cross-validation phân tầng 3 phần trên tập train, chấm theo average precision).
 
 \begin{table}[H]
 \centering
-\caption{Comparison of models on the validation set (cancelled class)}
+\caption{So sánh các mô hình trên tập validation (lớp hủy)}
 \label{tab:tab-models}
 \begin{tabular}{lrrrrr}
 \toprule
-Model & Precision & Recall & F1 & PR-AUC & Accuracy\\
+Mô hình & Precision & Recall & F1 & PR-AUC & Accuracy\\
 \midrule
-Baseline (majority class) & 0.000 & 0.000 & 0.000 & 0.277 & 0.723\\
-Logistic Regression & 0.679 & 0.531 & 0.596 & 0.683 & 0.801\\
-Logistic Regression (balanced) & 0.562 & 0.822 & 0.667 & 0.674 & 0.773\\
-Decision Tree & 0.719 & 0.576 & 0.640 & 0.701 & 0.820\\
-Random Forest & 0.741 & 0.648 & 0.692 & 0.775 & 0.840\\
-HistGradientBoosting & 0.733 & 0.637 & 0.682 & 0.779 & 0.835\\
-HistGradientBoosting (balanced) & 0.602 & 0.856 & 0.707 & 0.775 & 0.803\\
+Baseline (lớp đa số) & 0,000 & 0,000 & 0,000 & 0,277 & 0,723\\
+Logistic Regression & 0,679 & 0,531 & 0,596 & 0,683 & 0,801\\
+Logistic Regression (balanced) & 0,562 & 0,822 & 0,667 & 0,674 & 0,773\\
+Decision Tree & 0,719 & 0,576 & 0,640 & 0,701 & 0,820\\
+Random Forest & 0,741 & 0,648 & 0,692 & 0,775 & 0,840\\
+HistGradientBoosting & 0,733 & 0,637 & 0,682 & \textbf{0,779} & 0,835\\
+HistGradientBoosting (balanced) & 0,602 & 0,856 & 0,707 & 0,775 & 0,803\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Tree ensembles clearly outperform logistic regression (PR-AUC around 0.78 against 0.67--0.68), which matches the
-non-linear relationships seen in the EDA. Histogram gradient boosting has the highest PR-AUC and trains much faster
-than the random forest, so it was used for the next steps.
+Các mô hình dạng cây tốt hơn rõ rệt so với Logistic Regression (PR-AUC khoảng 0,78 so với 0,67--0,68), phù hợp với các quan hệ
+phi tuyến thấy ở phần EDA. HistGradientBoosting có PR-AUC cao nhất và huấn luyện nhanh hơn Random Forest nhiều,
+nên được dùng cho các bước tiếp theo. Phiên bản balanced gần như không làm thay đổi PR-AUC mà chủ yếu đổi giữa precision và recall.
 
-\subsection{Leakage Experiment}
-To show why the post-booking columns were removed, the same gradient boosting model was trained again with them added back.
+\subsection{Thí nghiệm rò rỉ dữ liệu}
+Để thấy vì sao các cột có sau khi đặt phòng phải bị loại, cùng một mô hình HistGradientBoosting được huấn luyện lại sau khi thêm các cột đó vào.
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_leakage.png}{Validation scores with and without leaked columns.}
-\caption{Adding check-in information raises PR-AUC from 0.779 to 0.793, and adding \texttt{reservation\_status} gives a perfect but meaningless 1.000.}
+\figureplaceholder{tabular/tabular_leakage.png}{Kết quả validation khi có và không có các cột rò rỉ.}
+\caption{Thêm thông tin lúc check-in làm PR-AUC tăng từ 0,779 lên 0,793, còn thêm \texttt{reservation\_status} cho kết quả tuyệt đối 1,000 nhưng không có ý nghĩa.}
 \label{fig:tab-leakage}
 \end{figure}
 
-With \texttt{reservation\_status} every metric equals 1.000, because the column is the outcome itself.
-The smaller increase from \texttt{assigned\_room\_type} and \texttt{booking\_changes} is harder to notice and could easily be
-mistaken for a real improvement, but these columns do not exist when the prediction has to be made.
+Khi có \texttt{reservation\_status}, mọi chỉ số đều bằng 1,000 vì cột này chính là kết quả cần dự đoán. Trường hợp thêm
+\texttt{assigned\_room\_type} và \texttt{booking\_changes} khó nhận ra hơn: PR-AUC chỉ tăng nhẹ, rất dễ bị hiểu nhầm là mô hình
+được cải thiện, nhưng tại thời điểm dự đoán thì hai cột này chưa tồn tại.
 
-\subsection{Handling Class Imbalance}
+\subsection{Xử lý mất cân bằng lớp}
 \begin{table}[H]
 \centering
-\caption{Imbalance handling with HistGradientBoosting (validation, cancelled class)}
+\caption{Các cách xử lý mất cân bằng với HistGradientBoosting (validation, lớp hủy)}
 \label{tab:tab-imbalance}
 \begin{tabular}{lrrrr}
 \toprule
-Method & Precision & Recall & F1 & PR-AUC\\
+Cách xử lý & Precision & Recall & F1 & PR-AUC\\
 \midrule
-No handling & 0.733 & 0.637 & 0.682 & 0.779\\
-\texttt{class\_weight="balanced"} & 0.602 & 0.856 & 0.707 & 0.775\\
-SMOTE (train only) & 0.688 & 0.712 & 0.700 & 0.770\\
-Tuned threshold (0.374) & 0.666 & 0.770 & 0.715 & 0.779\\
+Không xử lý & 0,733 & 0,637 & 0,682 & 0,779\\
+\texttt{class\_weight="balanced"} & 0,602 & 0,856 & 0,707 & 0,775\\
+SMOTE (chỉ trên tập train) & 0,688 & 0,712 & 0,700 & 0,770\\
+Điều chỉnh ngưỡng (0,374) & 0,666 & 0,770 & 0,715 & 0,779\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-All three methods increase the recall of cancellations. Tuning the decision threshold with cross-validation on the training
-set gives the best F1 and keeps the PR-AUC unchanged, since the model itself does not change. Class weighting gives the highest
-recall but its precision drops to 0.602, and SMOTE has the lowest PR-AUC, probably because it interpolates one-hot columns and
-creates bookings that cannot exist.
+Cả ba cách đều làm tăng recall của lớp hủy. Điều chỉnh ngưỡng bằng cross-validation trên tập train cho F1 cao nhất và giữ nguyên PR-AUC,
+vì mô hình không đổi mà chỉ đổi ngưỡng phân loại. \texttt{class\_weight} cho recall cao nhất nhưng precision giảm còn 0,602.
+SMOTE có PR-AUC thấp nhất, có thể do việc nội suy trên cả các cột one-hot tạo ra những booking không có thật,
+chẳng hạn một booking nửa thuộc City Hotel nửa thuộc Resort Hotel.
 
-\section{Results and Evaluation}
-The final model is the tuned gradient boosting model (learning rate 0.1, 200 iterations, 31 leaf nodes, at least 100 samples
-per leaf, L2 regularisation 1.0) with a decision threshold of 0.364. It was refitted on the training and validation sets
-(72,398 rows) and evaluated once on the test set.
+\section{Kết quả và đánh giá}
+Mô hình cuối là HistGradientBoosting đã tinh chỉnh (learning rate 0,1, 200 vòng lặp, 31 lá, tối thiểu 100 mẫu mỗi lá,
+L2 regularization 1,0) với ngưỡng phân loại 0,364, được chọn lại bằng cross-validation trên tập train.
+Mô hình được huấn luyện lại trên train và validation (72.398 dòng) rồi đánh giá một lần trên tập test.
 
 \begin{table}[H]
 \centering
-\caption{Final model on the validation and test sets (cancelled class)}
+\caption{Mô hình cuối trên tập validation và tập test (lớp hủy)}
 \label{tab:tab-results}
 \small\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llrrrrrr}
 \toprule
-Model & Set & Precision & Recall & F1 & PR-AUC & ROC-AUC & Accuracy\\
+Mô hình & Tập & Precision & Recall & F1 & PR-AUC & ROC-AUC & Accuracy\\
 \midrule
-Baseline & test & 0.000 & 0.000 & 0.000 & 0.277 & 0.500 & 0.723\\
-HGB tuned + threshold & validation & 0.660 & 0.782 & 0.715 & 0.783 & 0.905 & 0.828\\
-HGB tuned + threshold & test & 0.649 & 0.775 & 0.707 & 0.775 & 0.900 & 0.822\\
+Baseline & test & 0,000 & 0,000 & 0,000 & 0,277 & 0,500 & 0,723\\
+HGB tinh chỉnh + ngưỡng & validation & 0,660 & 0,782 & 0,715 & 0,783 & 0,905 & 0,828\\
+\textbf{HGB tinh chỉnh + ngưỡng} & \textbf{test} & \textbf{0,649} & \textbf{0,775} & \textbf{0,707} & \textbf{0,775} & \textbf{0,900} & \textbf{0,822}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The test scores are within 0.011 of the validation scores, so there is no sign of overfitting to the validation set.
-Compared with the baseline, PR-AUC rises from 0.277 to 0.775 and F1 from 0 to 0.707, while accuracy only goes from 72.3\% to 82.2\%.
-Out of 3,537 cancelled bookings in the test set the model detects 2,741 (77.5\%), and 1,481 of the 9,240 kept bookings (16.0\%)
-are flagged by mistake.
+Kết quả trên tập test chỉ thấp hơn validation tối đa 0,011, nên mô hình không bị overfit lên tập validation (Bảng~\ref{tab:tab-results}).
+So với baseline, PR-AUC tăng từ 0,277 lên 0,775 và F1 từ 0 lên 0,707, trong khi accuracy chỉ tăng từ 72,3\% lên 82,2\%.
+Trong 3.537 booking bị hủy ở tập test, mô hình phát hiện được 2.741 booking (77,5\%); đổi lại có 1.481 trong 9.240 booking
+không hủy (16,0\%) bị cảnh báo nhầm (Hình~\ref{fig:tab-confusion}).
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_confusion.png}{Confusion matrix on the test set.}
-\caption{On the test set the model detects 77.5\% of cancellations and wrongly flags 16.0\% of the bookings that were kept.}
+\figureplaceholder{tabular/tabular_confusion.png}{Confusion matrix trên tập test.}
+\caption{Trên tập test, mô hình phát hiện 77,5\% số booking bị hủy và cảnh báo nhầm 16,0\% số booking không hủy.}
 \label{fig:tab-confusion}
 \end{figure}
 
-The permutation importance on the test set agrees with the EDA. Shuffling \texttt{country} lowers PR-AUC by 0.162,
-followed by \texttt{lead\_time} (0.127), \texttt{agent} (0.115), \texttt{total\_of\_special\_requests} (0.108) and
-\texttt{market\_segment} (0.082). \texttt{deposit\_type} only ranks ninth (0.042) because few Non Refund bookings remain after removing duplicates.
+Permutation importance trên tập test phù hợp với phần EDA (Hình~\ref{fig:tab-importance}). Xáo trộn \texttt{country} làm PR-AUC giảm 0,162,
+tiếp theo là \texttt{lead\_time} (0,127), \texttt{agent} (0,115), \texttt{total\_of\_special\_requests} (0,108) và
+\texttt{market\_segment} (0,082). \texttt{deposit\_type} chỉ đứng thứ chín (0,042) vì sau khi bỏ trùng chỉ còn rất ít booking Non Refund.
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_importance.png}{Permutation importance on the test set.}
-\caption{Country, lead time, agent and the number of special requests are the most important features, in line with the EDA.}
+\figureplaceholder{tabular/tabular_importance.png}{Permutation importance trên tập test.}
+\caption{Quốc gia, thời gian đặt trước, đại lý và số yêu cầu đặc biệt là các đặc trưng quan trọng nhất, khớp với phần EDA.}
 \label{fig:tab-importance}
 \end{figure}
 
-The 796 missed cancellations look like low-risk bookings: their median lead time is 35 days (94 days for the detected
-cancellations) and 66.3\% of them have a special request (32.0\%). Their reasons for cancelling, such as a change of plans
-or illness, are not recorded in the booking data, which limits what any model can learn from it.
+\textbf{Phân tích lỗi.} 796 booking hủy bị bỏ sót có đặc điểm giống các booking ít khả năng hủy: trung vị thời gian đặt trước
+chỉ 35 ngày (so với 94 ngày ở các booking hủy được phát hiện) và 66,3\% có yêu cầu đặc biệt (so với 32,0\%).
+Lý do hủy của các booking này, như thay đổi kế hoạch hay ốm đau, không có trong dữ liệu đặt phòng,
+nên đây là giới hạn của dữ liệu hơn là của mô hình.
 
-\section{Question-Driven Figure}
-\textbf{Question:} Does handling class imbalance improve the recall of cancelled bookings?
+\section{Hình trả lời câu hỏi}
+\textbf{Câu hỏi:} Xử lý mất cân bằng lớp có giúp phát hiện được nhiều booking bị hủy hơn không?
 
 \begin{figure}[H]
 \centering
-\figureplaceholder{tabular/tabular_imbalance.png}{Precision, recall, F1 and PR-AUC for the four imbalance strategies.}
-\caption{Handling imbalance raises the recall of cancellations from 0.637 to 0.856 with class weights and to 0.770 with a tuned threshold; the tuned threshold gives the best F1 (0.715) without lowering PR-AUC.}
+\figureplaceholder{tabular/tabular_imbalance.png}{Precision, recall, F1 và PR-AUC của bốn cách xử lý mất cân bằng.}
+\caption{Xử lý mất cân bằng làm recall của lớp hủy tăng từ 0,637 lên 0,856 với class weight và lên 0,770 khi điều chỉnh ngưỡng; điều chỉnh ngưỡng cho F1 cao nhất (0,715) mà không làm giảm PR-AUC.}
 \label{fig:tab-creative}
 \end{figure}
 
-Yes. Without any handling, the model misses 36.3\% of the cancelled bookings in the validation set. With a threshold of 0.374
-it misses 23.0\% and still keeps a precision of 0.666. For a hotel, a false alarm usually costs a confirmation call, while a
-missed cancellation can leave a room empty, so trading some precision for recall is reasonable here.
+Có. Khi không xử lý, mô hình bỏ sót 36,3\% số booking bị hủy trong tập validation. Với ngưỡng 0,374, mô hình chỉ bỏ sót 23,0\%
+mà vẫn giữ precision 0,666. Với khách sạn, một cảnh báo nhầm thường chỉ tốn một cuộc gọi xác nhận, còn bỏ sót một booking hủy
+có thể khiến một phòng bị bỏ trống, nên đánh đổi một phần precision để có recall cao hơn là hợp lý.
 
-\section{Limitations and Future Work}
+\section{Kết luận}
+\begin{enumerate}[leftmargin=1.5cm]
+    \item \textbf{Dòng trùng ảnh hưởng lớn đến mọi con số.} 34.050 dòng trùng, phần lớn là booking đoàn Non Refund bị hủy,
+          làm tỷ lệ hủy tăng từ 27,7\% lên 37,0\%. Nếu không bỏ trùng, nhóm đặt trước 181--365 ngày ở City Hotel hủy 62,7\% thay vì 45,7\%.
+    \item \textbf{Đặt càng sớm càng dễ hủy}: ở City Hotel, từ 10,5\% (đặt trước tối đa 7 ngày) lên 45,7\% (181--365 ngày).
+    \item \textbf{Khách có kế hoạch rõ ràng ít hủy hơn}: một yêu cầu đặc biệt làm tỷ lệ hủy của khách mới giảm từ 34,7\% xuống 23,2\%,
+          khách quen hủy 7,7\% so với 28,5\%, và không booking nào có yêu cầu chỗ đỗ xe bị hủy.
+    \item \textbf{Các cột có sau khi đặt phòng cho kết quả giả}: \texttt{reservation\_status} cho PR-AUC bằng 1,000,
+          còn hai cột có lúc check-in âm thầm nâng PR-AUC từ 0,779 lên 0,793.
+    \item \textbf{Điều chỉnh ngưỡng là cách xử lý mất cân bằng hiệu quả nhất}: recall lớp hủy tăng từ 0,637 lên 0,770,
+          F1 cao nhất (0,715) và PR-AUC không giảm như khi dùng SMOTE.
+    \item \textbf{Mô hình cuối} (HistGradientBoosting tinh chỉnh, ngưỡng 0,364) đạt PR-AUC 0,775, F1 0,707 và recall 0,775 trên tập test,
+          phát hiện 77,5\% số booking bị hủy.
+\end{enumerate}
+
+\section{Hạn chế và hướng phát triển}
 \begin{itemize}[leftmargin=1.5cm]
-    \item The data covers only two hotels in Portugal with arrivals from 2015 to 2017, so the results may not transfer to
-          other hotels or to the period after COVID.
-    \item Without a booking ID, duplicated entries cannot be separated from rooms of the same group. Removing duplicates
-          changes the cancellation rate from 37.0\% to 27.7\%.
-    \item \texttt{country} may partly be updated at check-in. If so, cancelled bookings would more often have an empty or default
-          country, which could explain part of its importance. This could not be verified with the available data.
-    \item The split is random rather than chronological, so the test score may be optimistic for predicting future bookings.
-    \item Future work: a chronological split (train on 2015--2016, test on 2017), a check of \texttt{country} by removing it,
-          a threshold chosen from the actual costs of empty rooms and confirmation calls, and SMOTENC instead of SMOTE.
+    \item \textbf{Dữ liệu:} chỉ gồm hai khách sạn ở Bồ Đào Nha với ngày đến từ 2015 đến 2017, nên kết quả chưa chắc áp dụng được
+          cho khách sạn ở nơi khác hoặc giai đoạn sau COVID. Dataset không có mã booking nên không phân biệt được dòng nhập trùng
+          với các phòng của cùng một đoàn; quyết định bỏ trùng làm tỷ lệ hủy giảm từ 37,0\% xuống 27,7\%.
+    \item \textbf{Cột \texttt{country}:} có thể được cập nhật lúc check-in. Nếu đúng như vậy, booking bị hủy sẽ thường bị bỏ trống
+          hoặc ghi giá trị mặc định ở cột này, và một phần mức độ quan trọng của nó đến từ đó. Dữ liệu hiện có không đủ để kiểm chứng.
+    \item \textbf{Đánh giá:} dữ liệu được chia ngẫu nhiên chứ không theo thời gian, nên kết quả trên test có thể lạc quan hơn
+          khi dự đoán các booking trong tương lai.
+    \item \textbf{Hướng phát triển:} chia dữ liệu theo thời gian (huấn luyện trên 2015--2016, kiểm tra trên 2017), thử bỏ cột
+          \texttt{country} để kiểm tra rò rỉ, chọn ngưỡng dựa trên chi phí thực tế của phòng trống và cuộc gọi xác nhận,
+          và dùng SMOTENC thay cho SMOTE thông thường.
 \end{itemize}
 
-\section{References}
+\section{Tài liệu tham khảo}
 \begin{itemize}[leftmargin=1.5cm]
     \item N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets}, Data in Brief 22 (2019) 41--49. CC BY 4.0.
     \item R for Data Science Online Learning Community, \textit{TidyTuesday 2020-02-11: Hotels},
           \url{https://github.com/rfordatascience/tidytuesday}.
-    \item F. Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, JMLR 12 (2011) 2825--2830.
+    \item F. Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, Journal of Machine Learning Research 12 (2011) 2825--2830.
     \item G. Lemaître, F. Nogueira, C. K. Aridas, \textit{Imbalanced-learn: A Python Toolbox to Tackle the Curse of Imbalanced
-          Datasets in Machine Learning}, JMLR 18 (2017) 1--5.
+          Datasets in Machine Learning}, Journal of Machine Learning Research 18 (2017) 1--5.
 \end{itemize}
 
 \fussy
