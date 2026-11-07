@@ -13,6 +13,9 @@ scipy>=1.11
 scikit-learn>=1.2
 statsmodels>=0.14
 
+# Xử lý tiếng Việt (notebooks/text.ipynb)
+underthesea>=6.8
+
 # Trực quan hóa
 plotly>=5.15
 
