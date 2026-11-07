@@ -50,13 +50,25 @@ window.SITE_DATA = {
       id: "text",
       type: "Text",
       title: "Text Data Analysis",
-      summary: null,
-      problem: null,
-      dataset: null,
+      summary: "Detecting spam reviews on Vietnamese e-commerce sites: is a review spam, and which kind (fake praise, shop/delivery only, or not a review at all)?",
+      problem: "Supervised text classification on Vietnamese reviews, with two tasks: spam vs not spam (task 1) and four classes NO-SPAM / SPAM-1 fake review / SPAM-2 shop or delivery only / SPAM-3 not a review (task 2). EDA is done on the training set only and shows that standard text cleaning erases many spam signals (emoji, repeated letters, gibberish, empty reviews). The models therefore combine word and character TF-IDF with 10 hand-crafted signals, and are compared with a majority-class baseline and with the deep learning results of the original paper using macro F1 on the official test set.",
+      dataset: {
+        name: "UIT-ViSpamReviews v1",
+        url: "https://github.com/sonlam1102/vispamdetection",
+        samples: "19,870 reviews (official split: 14,306 train / 1,590 dev / 3,974 test)",
+        features: "4 columns: Rating (1-5 stars), Comment (review text), Label (task 1), SpamLabel (task 2)",
+        description: "Vietnamese product reviews from major e-commerce platforms, labelled by three trained annotators (Cohen's kappa 0.72 for task 1, 0.68 for task 2). Van Dinh, Luu and Nguyen, ACIIDS 2022; CC BY-NC 4.0."
+      },
       owner: "Tô Anh Phát",
-      status: "planned",
-      links: { notebook: null, report: null, video: null },
-      results: []
+      status: "in-progress",
+      links: { notebook: "notebooks/text.ipynb", report: "reports/text-report.pdf", video: null },
+      results: [
+        { model: "Baseline (always NO-SPAM), task 1", metric: "Macro F1 (test)", value: "41.9" },
+        { model: "Word + char TF-IDF + signals + Linear SVM, task 1", metric: "Macro F1 (test)", value: "85.4" },
+        { model: "PhoBERT (paper), task 1", metric: "Macro F1 (test)", value: "86.9" },
+        { model: "Syllable TF-IDF + signals + Linear SVM, task 2", metric: "Macro F1 (test)", value: "74.0" },
+        { model: "PhoBERT (paper), task 2", metric: "Macro F1 (test)", value: "72.2" }
+      ]
     },
     {
       id: "tabular",

@@ -1,53 +1,260 @@
-\chapter{Text Data Analysis}
+\chapter{Phân tích dữ liệu văn bản}
 \label{chap:text}
-% Text chapter, owner: Tô Anh Phát
+% Chương Text, phụ trách: Tô Anh Phát
+% Số liệu lấy từ notebooks/text.ipynb (lần chạy cuối); hình xuất từ cùng lần chạy
+\sloppy
 
-\section{Problem and Objectives}
-\textbf{Problem:} [Text task, research question, target labels.]
+\section{Bài toán và mục tiêu}
+Các sàn thương mại điện tử ở Việt Nam có rất nhiều review không nói về sản phẩm: lời khen copy-paste,
+review chỉ cảm ơn shop hay khen giao hàng, hoặc nội dung hoàn toàn không phải review.
+Những review này làm người mua hiểu sai về sản phẩm. Chương này dùng nội dung review (và số sao) để dự đoán
+review có phải spam không (\textbf{tác vụ 1}, 2 lớp) và thuộc loại spam nào (\textbf{tác vụ 2}, 4 lớp).
 
-\section{Dataset}
+Spam là lớp thiểu số (26\% số review), nên độ chính xác (accuracy) sẽ che mất lỗi ở các lớp hiếm.
+Thước đo chính vì vậy là \textbf{F1-macro}: tính F1 riêng cho từng lớp rồi lấy trung bình. Bài báo gốc cũng dùng
+thước đo này, nên kết quả so sánh được với các mô hình học sâu của bài báo.
+
+\section{Tập dữ liệu}
 \begin{itemize}[leftmargin=1.5cm]
-    \item Name: [Fill in]
-    \item Source and URL: [Fill in]
-    \item Samples / columns: [Fill in]
-    \item Labels and label distribution: [Fill in]
-    \item License / terms of use: [Fill in]
+    \item Tên: UIT-ViSpamReviews, phiên bản 1.
+    \item Nguồn: \url{https://github.com/sonlam1102/vispamdetection} (file zip chính thức của tác giả).
+    \item Thu thập: review của các sản phẩm bán chạy trên các sàn thương mại điện tử lớn ở Việt Nam, tối đa 15 review cho mỗi sản phẩm.
+          Ba người gán nhãn đã được huấn luyện cùng gán toàn bộ dữ liệu, nhãn cuối lấy theo đa số; hệ số Cohen's kappa là 0,72 (tác vụ 1) và 0,68 (tác vụ 2).
+    \item Kích thước: 19.870 review, 4 cột: \texttt{Rating} (1 đến 5 sao), \texttt{Comment} (nội dung), \texttt{Label} (tác vụ 1) và \texttt{SpamLabel} (tác vụ 2).
+          Tác giả chia sẵn 14.306 review train, 1.590 review dev và 3.974 review test.
+    \item Giấy phép và trích dẫn: CC BY-NC 4.0, dùng cho nghiên cứu. C. Van Dinh, S. T. Luu, A. G.-T. Nguyen,
+          \textit{Detecting Spam Reviews on Vietnamese E-commerce Websites}, ACIIDS 2022.
 \end{itemize}
 
-\section{Exploration and Preprocessing}
-% Missing, duplicates, text length, label imbalance, cleaning, normalisation, tokenisation, vectorisation
-[EDA and preprocessing.]
-
-\section{Models and Experimental Setup}
-[Baseline, models, train/validation/test split, main hyperparameters.]
-
-\section{Results and Evaluation}
-% Replace -- with metrics from the final notebook run
 \begin{table}[H]
 \centering
-\caption{Comparison of text models}
-\begin{tabular}{lrrrr}
+\caption{Các loại nhãn và tỷ lệ trong tập train}
+\label{tab:text-labels}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{8.4cm}rr}
 \toprule
-Model & Accuracy & Precision & Recall & F1-score\\
+Nhãn & Định nghĩa (bài báo) & Số review & Tỷ lệ\\
 \midrule
-Baseline & -- & -- & -- & --\\
-Model 2 & -- & -- & -- & --\\
-Best model & -- & -- & -- & --\\
+NO-SPAM & Review bình thường & 10.585 & 74,0\%\\
+SPAM-1 & Review giả: khen hoặc chê quá mức, không nói về sản phẩm thật & 195 & 1,4\%\\
+SPAM-2 & Chỉ nói về shop, thương hiệu hoặc việc giao hàng & 1.087 & 7,6\%\\
+SPAM-3 & Không phải review: quảng cáo, ký tự vô nghĩa, chuyện ngoài lề & 2.439 & 17,0\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Question-Driven Figure}
-\textbf{Question:} [A specific question.]
+\textbf{Chống rò rỉ dữ liệu.} Ba tập được ghép vào một bảng chỉ để kiểm tra chất lượng và tìm nội dung trùng giữa các tập.
+Mọi phân tích khám phá và mọi quyết định có dùng nhãn đều chỉ làm trên \textbf{tập train}. Tập dev dùng để so sánh mô hình,
+tập test chỉ dùng một lần ở bước đánh giá cuối.
+
+\section{Kiểm tra chất lượng dữ liệu}
+\begin{table}[H]
+\centering
+\caption{Các vấn đề chất lượng dữ liệu và cách xử lý}
+\label{tab:text-quality}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{5.8cm}}
+\toprule
+Vấn đề & Quy mô & Cách xử lý\\
+\midrule
+Giá trị thiếu, hai cột nhãn mâu thuẫn & không có & --\\
+Nội dung lặp lại (bỏ qua hoa thường, khoảng trắng) & 121 nội dung (0,6\%) & Giữ nguyên: hầu hết là câu rất ngắn như ``ok''\\
+Cùng nội dung nhưng khác nhãn & 7 nội dung (5 nằm trong train, 11 dòng) & Chỉ loại 5 nội dung mâu thuẫn tìm thấy trong train, khỏi tập train\\
+Review test có bản sao trong train & 41 (1,0\% tập test) & Giữ nguyên để so sánh được với bài báo; đo riêng ảnh hưởng trên test\\
+Văn bản chưa ở dạng Unicode NFC & 214 review train (1,5\%) & Chuẩn hóa về NFC\\
+Review rỗng sau khi làm sạch & 50 review train, đều là SPAM-3 & Giữ lại; được nhận ra nhờ đặc trưng ký tự và cột \texttt{is\_empty}\\
+Viết tắt, teencode (``ko'', ``sp'') & 23,6\% review train & Giữ nguyên; thay bằng từ đầy đủ đã được thử và không giúp gì (Bảng~\ref{tab:text-cv})\\
+Không có chữ có dấu & 678 review train (4,7\%) & Giữ nguyên; 382 trong số đó là chuỗi gõ bừa, tiếng Anh hoặc mã số, và 378 là SPAM-3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Chuẩn hóa văn bản.} Hàm \texttt{normalize\_text} đưa Unicode về dạng NFC, chuyển về chữ thường, thay đường link bằng
+\texttt{urltoken}, thay dấu câu và emoji bằng khoảng trắng rồi gộp các khoảng trắng. Đây là cách làm sạch thông thường,
+nhưng nó xóa mất những tín hiệu quan trọng với bài toán này: 50 review chỉ gồm emoji hoặc ký hiệu trở thành rỗng, và cả 50 đều là SPAM-3.
+
+\textbf{Tách từ.} Một từ tiếng Việt có thể gồm nhiều tiếng (\textit{sản phẩm}), còn khoảng trắng chỉ ngăn cách các tiếng.
+Notebook tách từ bằng \texttt{underthesea}, công cụ đạt F1 khoảng 97\% trên văn bản báo chí của bộ VLSP 2013.
+Thử trên review thật cho thấy công cụ tách đúng câu viết chuẩn, nhưng ghép sai khi người viết không ngắt câu
+(\textit{nhanh shop} thành \textit{nhanh\_shop}) và chỉ tách được một phần văn bản không dấu. Vì vậy công cụ được chạy
+\emph{trước} khi bỏ dấu câu, để dấu câu cho nó biết chỗ ngắt cụm từ.
+
+\textbf{Dấu vết của cách thu thập.} Độ dài gặp nhiều nhất là đúng 300 ký tự: 262 review train bị cắt ngang giữa chữ, và 74\% trong số đó là SPAM-3.
+Nhiều khả năng dữ liệu bị cắt ở 300 ký tự khi thu thập. Review mới sẽ không bị cắt như vậy, nên độ dài này không được dùng làm đặc trưng.
+
+\section{Phân tích khám phá (EDA)}
+Cứ 4 review có 1 spam, và SPAM-1 ít hơn NO-SPAM 54 lần, nên cần dùng F1-macro và trọng số lớp.
+93,5\% review chấm 5 sao; 96\% review spam và 93\% review thường đều 5 sao, nên số sao mang rất ít thông tin.
+Một nửa số review có tối đa 20 tiếng (17 từ). SPAM-1 dài nhất (trung vị 50 tiếng), còn SPAM-3 trải từ review rỗng đến các tin quảng cáo dài.
+
+\subsection{Câu hỏi 1: Dấu hiệu cách viết nào phân biệt các lớp?}
+Bước làm sạch xóa emoji, đường link, ký tự xuống dòng và chữ lặp, còn bộ từ vựng không thấy được độ dài hay việc thiếu dấu.
+Vì vậy mười dấu hiệu đơn giản được đo cho từng lớp (Hình~\ref{fig:text-signals}).
+
 \begin{figure}[H]
 \centering
-\figureplaceholder{text_creative.png}{Figure with a quantitative comparison and a conclusion caption.}
-\caption{[State the conclusion with numbers to compare.]}
-\label{fig:text-creative}
+\figureplaceholder{text/text_signals.png}{Tỷ lệ mỗi lớp có từng dấu hiệu cách viết.}
+\caption{SPAM-3 nổi bật: 28,2\% có tối đa 3 tiếng (NO-SPAM: 2,1\%), 23,2\% không có chữ có dấu (0,9\%), 13,2\% lặp một chữ từ 10 lần trở lên (0,2\%). SPAM-1 hay viết nhiều dòng (39,5\% so với 14,9\%) và ít viết tắt (9,2\% so với 26,6\%). Chữ số xuất hiện đều ở mọi lớp.}
+\label{fig:text-signals}
 \end{figure}
 
-\section{Limitations and Future Work}
-[Limitations, bias risks, data constraints, next steps.]
+\subsection{Câu hỏi 2: SPAM-2 có thật sự chỉ nói về shop và giao hàng?}
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_topics.png}{Tỷ lệ mỗi lớp nhắc đến từng chủ đề.}
+\caption{69\% review SPAM-2 nói về giao hàng hoặc đóng gói nhưng chỉ 30\% nhắc đến sản phẩm, và 21\% nói ``chưa dùng'', ``chưa biết'' (các lớp khác: 0 đến 2\%). Tuy nhiên 31\% review thường cũng chỉ nói về giao hàng hoặc shop, nên ranh giới SPAM-2 và NO-SPAM rất mờ.}
+\label{fig:text-topics}
+\end{figure}
 
-\section{References}
-[Dataset source, papers, model documentation; use one citation style.]
+\subsection{Câu hỏi 3: Review giả có phải là văn mẫu copy-paste?}
+Một review thật hiếm khi trùng 6 tiếng liên tiếp với review khác một cách ngẫu nhiên. Ta đếm, cho mỗi lớp,
+các chuỗi 6 tiếng xuất hiện trong ít nhất 10 review khác nhau.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_templates.png}{Chuỗi 6 tiếng dùng chung theo lớp.}
+\caption{48,7\% review SPAM-1 chứa một chuỗi 6 tiếng dùng chung, so với 11,3\% review thường. Phần lớn các chuỗi SPAM-1 dùng nhiều nhất là các đoạn liên tiếp của cùng một văn mẫu (\textit{``... tôi không thể trông đợi gì hơn. Cảm ơn nhà cung cấp ...''}); 41 trong 195 review giả (21\%) dán nguyên một trong hai văn mẫu.}
+\label{fig:text-templates}
+\end{figure}
+
+\textbf{Từ vựng.} Tập train có 12.307 tiếng khác nhau nhưng 20.412 từ khác nhau, và 64\% số từ chỉ xuất hiện một lần.
+So sánh log-odds trên từ 1-gram và 2-gram khẳng định các chủ đề ở trên: \textit{chưa sử\_dụng} là term đặc trưng nhất của SPAM-2,
+review thường kể trải nghiệm cụ thể, còn các term của SPAM-3 đến từ tin nhắn quảng cáo viết không dấu.
+
+\section{Tiền xử lý dữ liệu}
+\subsection{Pipeline và chống rò rỉ dữ liệu}
+Mọi phép biến đổi văn bản đều xử lý từng review độc lập và được áp dụng cho cả ba tập qua một hàm duy nhất, \texttt{model\_inputs};
+hàm này cũng được dùng cho review mới. Mọi thống kê (bộ từ vựng và idf của TF-IDF, tham số chuẩn hóa, danh sách giá trị one-hot)
+đều được học bên trong \texttt{Pipeline} với \texttt{ColumnTransformer}, nên chỉ đến từ dữ liệu huấn luyện, kể cả trong kiểm định chéo.
+Dev và test giữ nguyên kích thước (1.590 và 3.974 review); train còn 14.295 review sau khi loại 11 dòng mâu thuẫn nhãn.
+
+\subsection{Đặc trưng}
+\begin{table}[H]
+\centering
+\caption{Các nhóm đặc trưng và phát hiện EDA làm căn cứ}
+\label{tab:text-features}
+\begin{tabular}{>{\raggedright\arraybackslash}p{6.4cm}>{\raggedright\arraybackslash}p{8.0cm}}
+\toprule
+Đặc trưng & Căn cứ\\
+\midrule
+TF-IDF trên tiếng hoặc từ 1-2 gram (\texttt{sublinear\_tf}, \texttt{min\_df}=2) & Từ phổ biến có ở mọi lớp (idf); spam hay lặp chữ, lặp đoạn (sublinear tf); 64\% số từ chỉ xuất hiện một lần (\texttt{min\_df})\\
+TF-IDF trên ký tự 1-5 gram (\texttt{char\_wb}) của văn bản \emph{chưa} bỏ dấu câu và emoji & Giữ lại emoji, chữ lặp, chuỗi gõ bừa và văn bản không dấu mà bước làm sạch xóa mất\\
+10 dấu hiệu: tối đa 3 tiếng, rỗng, nhiều dòng, không dấu, emoji, link, lặp chữ từ 4 và từ 10 lần, viết tắt, $\log(1+\text{độ dài})$; chuẩn hóa bằng \texttt{MaxAbsScaler} & Hình~\ref{fig:text-signals}; độ dài khác nhau giữa các lớp và lệch phải\\
+Số sao, mã hóa one-hot & EDA cho thấy là đặc trưng yếu; giữ lại để kiểm chứng\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Mô hình và thiết lập thí nghiệm}
+Các mô hình gồm mốc cơ sở luôn đoán lớp đông nhất (\texttt{DummyClassifier}), Complement Naive Bayes (thiết kế cho văn bản lệch lớp),
+Logistic Regression và SVM tuyến tính; hai mô hình sau dùng \texttt{class\_weight="balanced"}.
+Mô hình học sâu như PhoBERT không được huấn luyện (cần GPU); điểm của chúng lấy từ bài báo. Việc chọn mô hình gồm ba bước:
+\begin{enumerate}[leftmargin=1.5cm]
+    \item Bốn cách biểu diễn văn bản nhân ba mô hình, huấn luyện trên train và chấm điểm trên dev, cho cả hai tác vụ (Hình~\ref{fig:text-models}).
+    \item Tập dev chỉ có 25 review SPAM-1, nên chênh lệch nhỏ trên dev có thể chỉ là may rủi. Các lựa chọn tiếp theo (có dùng dấu hiệu không,
+          có dùng số sao không, tham số điều chuẩn $C \in \{0{,}1;\ 0{,}3;\ 1;\ 3\}$, có thay viết tắt không) được quyết định bằng
+          kiểm định chéo phân tầng 3 phần trên tập train (Bảng~\ref{tab:text-cv}).
+    \item Pipeline được chọn được huấn luyện lại trên train và dev, rồi đánh giá một lần trên test.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_model_comparison.png}{F1-macro trên dev của mọi cách biểu diễn và mô hình.}
+\caption{Ở tác vụ 1, cách biểu diễn quan trọng hơn mô hình: với SVM tuyến tính, tiếng đạt 78,9, từ 78,8, ký tự 81,7, từ và ký tự 83,1. Tách từ chỉ hơn đếm tiếng tối đa 1,1 điểm (với Logistic Regression), vì 2-gram tiếng đã ghép lại được phần lớn từ ghép; đặc trưng ký tự thêm 2,8 điểm. Ở tác vụ 2, tiếng (73,9) và từ kết hợp ký tự (73,3) gần như bằng nhau.}
+\label{fig:text-models}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{F1-macro (\%) kiểm định chéo 3 phần trên train ($C = 0{,}3$, cách biểu diễn tốt nhất của mỗi tác vụ)}
+\label{tab:text-cv}
+\begin{tabular}{lrr}
+\toprule
+Thiết lập & Tác vụ 1 & Tác vụ 2\\
+\midrule
+Chỉ đặc trưng văn bản & 84,1 & 66,0\\
+Thêm 10 dấu hiệu & 84,4 & 68,6\\
+Thêm 10 dấu hiệu và số sao (được chọn) & \textbf{84,4} & \textbf{68,7}\\
+Như trên, thay viết tắt bằng từ đầy đủ & 84,4 & 69,0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Các dấu hiệu thêm 2,6 điểm ở tác vụ 2 (mô hình theo tiếng, không có đặc trưng ký tự) nhưng chỉ 0,3 điểm ở tác vụ 1,
+nơi n-gram ký tự đã bắt được phần lớn thông tin này. Số sao và việc thay viết tắt chỉ thay đổi tối đa 0,3 điểm,
+nên viết tắt được giữ nguyên. $C = 0{,}3$ tốt nhất cho cả hai tác vụ. Mô hình cuối của tác vụ 1 là từ, ký tự, dấu hiệu và số sao
+với SVM tuyến tính; của tác vụ 2 là tiếng, dấu hiệu và số sao với SVM tuyến tính.
+
+\section{Kết quả và đánh giá}
+\begin{table}[H]
+\centering
+\caption{Kết quả trên tập test (\%); bài báo không báo cáo accuracy của TextCNN, LSTM và GRU}
+\label{tab:text-results}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{2}{c}{Tác vụ 1} & \multicolumn{2}{c}{Tác vụ 2}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Mô hình & Accuracy & F1-macro & Accuracy & F1-macro\\
+\midrule
+Mốc cơ sở (luôn đoán NO-SPAM) & 72,1 & 41,9 & 72,1 & 21,0\\
+TextCNN / LSTM / GRU (bài báo) & -- & 77,2--77,9 & -- & 64,7--66,6\\
+PhoBERT (bài báo) & 90,0 & \textbf{86,9} & 88,9 & 72,2\\
+TF-IDF, dấu hiệu và SVM tuyến tính (nhóm) & 88,1 & 85,4 & 86,1 & \textbf{74,0}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Mô hình tuyến tính đạt F1-macro 85,4 ở tác vụ 1, kém PhoBERT 1,5 điểm và cao hơn các mạng hồi quy, mạng tích chập của bài báo
+7,5 đến 8,2 điểm. Ở tác vụ 2, mô hình đạt 74,0, cao hơn PhoBERT 1,8 điểm, trong khi chỉ cần vài giây huấn luyện trên CPU.
+Điểm của các mô hình học sâu do bài báo tự báo cáo, nhóm không chạy lại. Bỏ 41 review test có bản sao trong train,
+F1-macro chỉ thay đổi tối đa 0,1 điểm (85,3 và 74,0), nên phần trùng này không thổi phồng kết quả.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_confusion.png}{Ma trận nhầm lẫn trên tập test.}
+\caption{Tác vụ 1 phát hiện được 80,6\% số spam (precision 77,6\%). Ở tác vụ 2, SPAM-2 là lớp khó nhất (F1 58,6): 123 review SPAM-2 (39\%) bị đoán là NO-SPAM, cũng là lỗi chính của PhoBERT trong bài báo (177 review). SPAM-1 vẫn đạt F1 68,4 dù chỉ có 61 review test.}
+\label{fig:text-confusion}
+\end{figure}
+
+\textbf{Phân tích lỗi.} Ở tác vụ 1, tỷ lệ đoán đúng theo loại review là 91,0\% với NO-SPAM, 88,0\% với SPAM-3, 70,5\% với SPAM-1
+và 65,5\% với SPAM-2. Đọc các review bị đoán sai thấy bốn nguyên nhân:
+(1) review SPAM-2 kể chi tiết chuyện giao hàng rồi nhắc qua sản phẩm, đúng ranh giới mờ ở Hình~\ref{fig:text-topics};
+(2) review giả không dùng văn mẫu, đọc như một lời khen bình thường;
+(3) nhãn đáng ngờ, ví dụ \textit{``Đánh giá cho shop 5 sao vì sự nhiệt tình của shop''} được gán NO-SPAM dù chỉ nói về shop,
+phù hợp với hệ số kappa 0,68 đến 0,72 của người gán nhãn;
+(4) review thường viết kiểu ``teen'' với chữ lặp, một dấu hiệu mô hình học được từ spam.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_weights.png}{Các từ có trọng số lớn nhất của mô hình tác vụ 1.}
+\caption{Trọng số của mô hình khớp với EDA: \textit{chưa sử\_dụng} và \textit{chưa dùng} đẩy mạnh nhất về phía spam, còn các nhận xét cụ thể về sản phẩm như \textit{hàng tốt}, \textit{chất\_lượng tốt} đẩy về NO-SPAM. Trong các dấu hiệu, độ dài, lặp chữ từ 10 lần, tối đa 3 tiếng và có link có trọng số dương lớn nhất.}
+\label{fig:text-weights}
+\end{figure}
+
+\section{Hình trả lời câu hỏi}
+\textbf{Câu hỏi:} Tách từ có giúp nhiều hơn việc giữ lại thông tin mà bước làm sạch văn bản xóa mất không?
+
+Hình~\ref{fig:text-models} và Bảng~\ref{tab:text-cv} trả lời câu hỏi này. So với đếm tiếng, tách từ chỉ làm F1-macro thay đổi
+tối đa 1,1 điểm. Khôi phục những gì bước làm sạch xóa mất giúp nhiều hơn: n-gram ký tự trên văn bản chưa làm sạch thêm 2,8 điểm
+ở tác vụ 1, và 10 dấu hiệu tự định nghĩa thêm 2,6 điểm ở tác vụ 2. Với review spam tiếng Việt, \emph{cách} một review được viết
+mang nhiều thông tin không kém các từ mà nó dùng.
+
+\section{Hạn chế và hướng phát triển}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Nhiễu nhãn: độ đồng thuận giữa người gán nhãn là 0,68 đến 0,72 và có 7 nội dung bị gán nhãn mâu thuẫn; một số lỗi trong phần
+          phân tích lỗi nhiều khả năng là lỗi gán nhãn chứ không phải lỗi mô hình.
+    \item SPAM-1 rất ít (195 review train, 61 review test) nên F1 của lớp này dao động mạnh; một phần dữ liệu bị cắt ở 300 ký tự.
+    \item Danh sách viết tắt và các dấu hiệu do nhóm tự định nghĩa; công cụ tách từ sai với văn bản không dấu và khi thiếu dấu câu;
+          mô hình túi từ không hiểu được ngữ cảnh dài hay giọng mỉa mai.
+    \item Chỉ dùng một cách chia dữ liệu của tác giả, và điểm học sâu lấy từ bài báo chứ không chạy trong cùng pipeline.
+    \item Hướng phát triển: fine-tune PhoBERT trên cùng dữ liệu đã làm sạch để so sánh công bằng và thử ghép với các dấu hiệu tự định nghĩa;
+          chỉnh ngưỡng quyết định của tác vụ 1 khi cần bắt được nhiều spam hơn; gán nhãn lại các review ngắn bị mâu thuẫn.
+\end{itemize}
+
+\section{Tài liệu tham khảo}
+\begin{itemize}[leftmargin=1.5cm]
+    \item C. Van Dinh, S. T. Luu, A. G.-T. Nguyen, \textit{Detecting Spam Reviews on Vietnamese E-commerce Websites},
+          ACIIDS 2022, arXiv:2207.14636. Dữ liệu: \url{https://github.com/sonlam1102/vispamdetection}, CC BY-NC 4.0.
+    \item underthesea contributors, \textit{underthesea: Vietnamese NLP Toolkit}, \url{https://github.com/undertheseanlp/underthesea}.
+    \item F. Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, JMLR 12 (2011) 2825--2830.
+\end{itemize}
+
+\fussy
