@@ -1,53 +1,265 @@
 \chapter{Text Data Analysis}
 \label{chap:text}
 % Text chapter, owner: Tô Anh Phát
+% Numbers come from notebooks/text.ipynb (final local run); figures are exported from the same run with English labels
+\sloppy
 
 \section{Problem and Objectives}
-\textbf{Problem:} [Text task, research question, target labels.]
+Vietnamese e-commerce platforms contain many reviews that do not describe the product: copy-pasted praise,
+reviews that only thank the shop or the courier, and text that is not a review at all.
+Such reviews mislead buyers. This chapter predicts, from the review text (and the star rating),
+whether a review is spam (\textbf{task 1}, two classes) and which type of spam it is (\textbf{task 2}, four classes).
+
+Spam is the minority class (26\% of reviews), so accuracy would hide errors on the rare classes.
+The main metric is therefore the \textbf{macro F1-score}, which is also the metric of the original paper,
+so the results can be compared with its deep learning models.
 
 \section{Dataset}
 \begin{itemize}[leftmargin=1.5cm]
-    \item Name: [Fill in]
-    \item Source and URL: [Fill in]
-    \item Samples / columns: [Fill in]
-    \item Labels and label distribution: [Fill in]
-    \item License / terms of use: [Fill in]
+    \item Name: UIT-ViSpamReviews, version 1.
+    \item URL: \url{https://github.com/sonlam1102/vispamdetection} (official zip from the authors).
+    \item Source: reviews of recently best-selling products on major Vietnamese e-commerce platforms, at most 15 reviews per product.
+          Three trained annotators labelled every review; the final label is the majority vote, with Cohen's kappa 0.72 (task 1) and 0.68 (task 2).
+    \item Size: 19,870 reviews with 4 columns: \texttt{Rating} (1--5 stars), \texttt{Comment} (text), \texttt{Label} (task 1) and \texttt{SpamLabel} (task 2).
+          The authors provide a fixed split of 14,306 train / 1,590 dev / 3,974 test reviews.
+    \item License / citation: CC BY-NC 4.0, research use. C. Van Dinh, S. T. Luu, A. G.-T. Nguyen,
+          \textit{Detecting Spam Reviews on Vietnamese E-commerce Websites}, ACIIDS 2022.
 \end{itemize}
 
-\section{Exploration and Preprocessing}
-% Missing, duplicates, text length, label imbalance, cleaning, normalisation, tokenisation, vectorisation
-[EDA and preprocessing.]
-
-\section{Models and Experimental Setup}
-[Baseline, models, train/validation/test split, main hyperparameters.]
-
-\section{Results and Evaluation}
-% Replace -- with metrics from the final notebook run
 \begin{table}[H]
 \centering
-\caption{Comparison of text models}
-\begin{tabular}{lrrrr}
+\caption{Spam types and their share of the training set}
+\label{tab:text-labels}
+\begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{8.2cm}rr}
 \toprule
-Model & Accuracy & Precision & Recall & F1-score\\
+Label & Definition (paper) & Train & Share\\
 \midrule
-Baseline & -- & -- & -- & --\\
-Model 2 & -- & -- & -- & --\\
-Best model & -- & -- & -- & --\\
+NO-SPAM & Normal review & 10,585 & 74.0\%\\
+SPAM-1 & Fake review: exaggerated praise or criticism, not about the real product & 195 & 1.4\%\\
+SPAM-2 & Only talks about the shop, the brand or the delivery & 1,087 & 7.6\%\\
+SPAM-3 & Not a review: advertising, meaningless characters, off-topic chat & 2,439 & 17.0\%\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\section{Question-Driven Figure}
-\textbf{Question:} [A specific question.]
+\textbf{Leakage policy.} The three sets are loaded into one table only to check data quality and to find
+duplicates across sets. Every exploratory analysis and every decision that uses labels is made on the
+\textbf{training set only}; the dev set is used to compare models and the test set is used once, at the end.
+
+\section{Data Quality Checks}
+\begin{table}[H]
+\centering
+\caption{Data quality issues and how they were handled}
+\label{tab:text-quality}
+\begin{tabular}{>{\raggedright\arraybackslash}p{4.4cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{5.8cm}}
+\toprule
+Issue & Size & Handling\\
+\midrule
+Missing values, inconsistent labels & none & --\\
+Same text repeated (ignoring case and spaces) & 121 texts (0.6\%) & Kept: mostly very short texts such as ``ok''\\
+Same text with different labels & 7 texts (5 inside train, 11 rows) & The 5 conflicts found inside train are removed from train only\\
+Test reviews copied from train & 41 (1.0\% of test) & Kept to stay comparable with the paper; impact measured on the test set\\
+Text not in Unicode NFC form & 214 train reviews (1.5\%) & Normalised to NFC\\
+Reviews empty after cleaning & 50 train reviews, all SPAM-3 & Kept; captured by character features and an \texttt{is\_empty} flag\\
+Abbreviations and teencode (``ko'', ``sp'') & 23.6\% of train reviews & Kept; expanding them was tested and did not help (Table~\ref{tab:text-cv})\\
+No Vietnamese diacritics & 678 train reviews (4.7\%) & Kept; 382 of them are gibberish, English or codes, 378 of which are SPAM-3\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Text normalisation.} \texttt{normalize\_text} converts Unicode to NFC, lower-cases the text, replaces links with the token
+\texttt{urltoken}, replaces punctuation and emoji with spaces and collapses spaces. This is the standard cleaning, but it removes
+signals that matter here: the 50 reviews made only of emoji or symbols become empty, and all of them are SPAM-3.
+
+\textbf{Word segmentation.} A Vietnamese word can have several syllables (\textit{sản phẩm} = ``product''), and spaces only
+separate syllables. Words were segmented with \texttt{underthesea}, which reports about 97\% F1 on the VLSP 2013 news corpus.
+Tests on real reviews show that it handles well-written text but merges words across a missing sentence break
+(\textit{nhanh shop} becomes \textit{nhanh\_shop}) and only partly segments text without diacritics. The tool is therefore run
+before punctuation is removed, since punctuation tells it where phrases end.
+
+\textbf{A collection artefact.} The most frequent review length is exactly 300 characters: 262 training reviews end mid-word,
+and 74\% of them are SPAM-3. The data was probably truncated when it was collected. Since new reviews will not be truncated,
+this length is not used as a feature.
+
+\section{Exploratory Data Analysis}
+One review in four is spam, and SPAM-1 is 54 times rarer than NO-SPAM, which calls for macro F1 and class weights.
+93.5\% of the reviews give 5 stars; 96\% of spam and 93\% of normal reviews are 5-star, so the rating carries little information.
+The median review has 20 syllables (17 words); SPAM-1 reviews are the longest (median 50 syllables), while SPAM-3 ranges
+from empty to long advertisements.
+
+\subsection{Question 1: Which Writing Signals Separate the Classes?}
+The cleaning step removes emoji, links, line breaks and repeated letters, and the vocabulary cannot see length or missing diacritics.
+Ten simple signals were therefore measured for each class (Figure~\ref{fig:text-signals}).
+
 \begin{figure}[H]
 \centering
-\figureplaceholder{text_creative.png}{Figure with a quantitative comparison and a conclusion caption.}
-\caption{[State the conclusion with numbers to compare.]}
-\label{fig:text-creative}
+\figureplaceholder{text/text_signals.png}{Share of each class showing each writing signal.}
+\caption{SPAM-3 stands out: 28.2\% have at most 3 syllables (2.1\% of NO-SPAM), 23.2\% have no diacritics (0.9\%) and 13.2\% repeat a letter at least 10 times (0.2\%). SPAM-1 is written on several lines (39.5\% against 14.9\%) and rarely uses abbreviations (9.2\% against 26.6\%). Digits are equally common in every class.}
+\label{fig:text-signals}
 \end{figure}
 
+\subsection{Question 2: Does SPAM-2 Really Talk Only About the Shop and the Delivery?}
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_topics.png}{Share of each class mentioning each topic.}
+\caption{69\% of SPAM-2 reviews mention delivery or packaging but only 30\% mention the product, and 21\% say they have not used the product yet (0--2\% in other classes). However, 31\% of normal reviews also only mention delivery or the shop, so the SPAM-2 / NO-SPAM boundary is blurred.}
+\label{fig:text-topics}
+\end{figure}
+
+\subsection{Question 3: Are Fake Reviews Copy-Pasted Templates?}
+A genuine review rarely shares 6 consecutive syllables with another review by chance. Phrases of 6 syllables that appear in
+at least 10 different reviews were counted for each class.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_templates.png}{Shared 6-syllable phrases per class.}
+\caption{48.7\% of SPAM-1 reviews contain a shared 6-syllable phrase, against 11.3\% of normal reviews. Most top SPAM-1 phrases are consecutive pieces of one template (\textit{``... tôi không thể trông đợi gì hơn. Cảm ơn nhà cung cấp ...''}); 41 of the 195 fake reviews (21\%) paste one of two templates verbatim.}
+\label{fig:text-templates}
+\end{figure}
+
+\textbf{Vocabulary.} The training set contains 12,307 distinct syllables but 20,412 distinct words, and 64\% of the words occur only once.
+A log-odds comparison of word unigrams and bigrams confirms the topics above: \textit{chưa sử\_dụng} (``not used yet'') is the most
+typical SPAM-2 term, NO-SPAM reviews describe concrete experience, and SPAM-3 terms come from unaccented advertising text messages.
+
+\section{Data Preprocessing}
+\subsection{Pipeline and Data Leakage Prevention}
+All text transformations are row-wise and are applied to the three sets by one function, \texttt{model\_inputs}, which is also used
+for new reviews. Every statistic (TF-IDF vocabulary and idf, scaler parameters, one-hot categories) is learned inside a
+\texttt{Pipeline} with a \texttt{ColumnTransformer}, so it only comes from the training data, including inside cross-validation.
+Dev and test keep their original size (1,590 and 3,974 reviews); train has 14,295 reviews after removing the 11 conflicting rows.
+
+\subsection{Features}
+\begin{table}[H]
+\centering
+\caption{Feature groups and the EDA finding that motivates each one}
+\label{tab:text-features}
+\begin{tabular}{>{\raggedright\arraybackslash}p{6.2cm}>{\raggedright\arraybackslash}p{8.2cm}}
+\toprule
+Features & Reason\\
+\midrule
+TF-IDF on syllable or word 1--2 grams (\texttt{sublinear\_tf}, \texttt{min\_df}=2) & Frequent words appear in every class (idf); spam repeats letters and phrases (sublinear tf); 64\% of words occur once (\texttt{min\_df})\\
+TF-IDF on character 1--5 grams (\texttt{char\_wb}) of the text \emph{before} punctuation and emoji are removed & Keeps emoji, repeated letters, gibberish and unaccented text that cleaning erases\\
+10 signals: at most 3 syllables, empty, several lines, no diacritics, emoji, link, letter repeated 4+ and 10+ times, abbreviation, $\log(1+\text{length})$; scaled with \texttt{MaxAbsScaler} & Figure~\ref{fig:text-signals}; length differs between classes and is right-skewed\\
+Star rating, one-hot encoded & Weak according to the EDA; kept only to test it\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Models and Experimental Setup}
+The models are a majority-class baseline (\texttt{DummyClassifier}), Complement Naive Bayes (designed for imbalanced text),
+logistic regression and a linear SVM, the last two with \texttt{class\_weight="balanced"}.
+Deep models such as PhoBERT were not trained (they need a GPU); their scores are taken from the paper.
+The selection was done in three steps:
+\begin{enumerate}[leftmargin=1.5cm]
+    \item Four text representations $\times$ three models, trained on train and scored on dev, for both tasks (Figure~\ref{fig:text-models}).
+    \item The dev set has only 25 SPAM-1 reviews, so small differences on dev can be luck. The next choices (signals or not,
+          rating or not, regularisation $C \in \{0.1, 0.3, 1, 3\}$, expanding abbreviations or not) were made with
+          3-fold stratified cross-validation on the training set (Table~\ref{tab:text-cv}).
+    \item The chosen pipeline was refitted on train + dev and evaluated once on the test set.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_model_comparison.png}{Macro F1 on dev for every representation and model.}
+\caption{For task 1 the representation matters more than the model: with a linear SVM, syllables score 78.9, words 78.8, characters 81.7 and words + characters 83.1. Word segmentation adds at most 1.1 points over syllables (logistic regression), because syllable bigrams already rebuild most compound words; character features add 2.8 points. For task 2, syllables (73.9) and words + characters (73.3) are tied.}
+\label{fig:text-models}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Macro F1 (\%) with 3-fold cross-validation on train ($C = 0.3$, best representation of each task)}
+\label{tab:text-cv}
+\begin{tabular}{lrr}
+\toprule
+Setting & Task 1 & Task 2\\
+\midrule
+Text features only & 84.1 & 66.0\\
++ 10 signals & 84.4 & 68.6\\
++ 10 signals + rating (selected) & \textbf{84.4} & \textbf{68.7}\\
++ 10 signals + rating, abbreviations expanded & 84.4 & 69.0\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The signals add 2.6 points for task 2, whose model has no character features, but only 0.3 points for task 1, where the
+character n-grams already capture most of them. The rating and the expansion of abbreviations change the score by at most
+0.3 points, so abbreviations are kept as written. $C = 0.3$ is the best value for both tasks.
+The final models are words + characters + signals + rating with a linear SVM for task 1, and syllables + signals + rating with
+a linear SVM for task 2.
+
+\section{Results and Evaluation}
+\begin{table}[H]
+\centering
+\caption{Results on the test set (\%); the paper does not report the accuracy of TextCNN, LSTM and GRU}
+\label{tab:text-results}
+\begin{tabular}{lrrrr}
+\toprule
+& \multicolumn{2}{c}{Task 1} & \multicolumn{2}{c}{Task 2}\\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+Model & Accuracy & Macro F1 & Accuracy & Macro F1\\
+\midrule
+Baseline (always NO-SPAM) & 72.1 & 41.9 & 72.1 & 21.0\\
+TextCNN / LSTM / GRU (paper) & -- & 77.2--77.9 & -- & 64.7--66.6\\
+PhoBERT (paper) & 90.0 & \textbf{86.9} & 88.9 & 72.2\\
+TF-IDF + signals + linear SVM (ours) & 88.1 & 85.4 & 86.1 & \textbf{74.0}\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The linear model reaches 85.4 macro F1 on task 1, 1.5 points below PhoBERT and 7.5--8.2 points above the paper's
+recurrent and convolutional networks. On task 2 it scores 74.0, 1.8 points above PhoBERT, while training in a few seconds on a CPU.
+The deep learning scores are those reported by the paper and were not reproduced here.
+Removing the 41 test reviews that also appear in train changes macro F1 by at most 0.1 points (85.3 and 74.0),
+so this overlap does not inflate the results.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_confusion.png}{Confusion matrices on the test set.}
+\caption{Task 1 detects 80.6\% of spam (precision 77.6\%). In task 2, SPAM-2 is the hardest class (F1 58.6): 123 SPAM-2 reviews (39\%) are predicted as NO-SPAM, the same main error as PhoBERT in the paper (177 reviews). SPAM-1 still reaches F1 68.4 with only 61 test reviews.}
+\label{fig:text-confusion}
+\end{figure}
+
+\textbf{Error analysis.} For task 1, the share of correct predictions is 91.0\% for NO-SPAM, 88.0\% for SPAM-3, 70.5\% for SPAM-1
+and 65.5\% for SPAM-2. Reading the wrong predictions shows four causes:
+(1) SPAM-2 reviews that describe the delivery in detail and briefly mention the product, the blurred boundary of Figure~\ref{fig:text-topics};
+(2) fake reviews that do not use a template and read like normal praise;
+(3) doubtful labels, for example \textit{``Đánh giá cho shop 5 sao vì sự nhiệt tình của shop''} (``5 stars for the shop's kindness'')
+labelled NO-SPAM although it only talks about the shop, in line with the annotators' kappa of 0.68--0.72;
+(4) normal reviews written in a ``teen'' style with repeated letters, a signal the model learned from spam.
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{text/text_weights.png}{Largest word weights of the task 1 model.}
+\caption{The model's weights agree with the EDA: \textit{chưa sử\_dụng} and \textit{chưa dùng} (``not used yet'') push most strongly towards spam, while concrete product comments such as \textit{hàng tốt} (``good goods'') and \textit{chất\_lượng tốt} (``good quality'') push towards NO-SPAM. Among the signals, length, letters repeated 10+ times, at most 3 syllables and links have the largest positive weights.}
+\label{fig:text-weights}
+\end{figure}
+
+\section{Question-Driven Figure}
+\textbf{Question:} Does word segmentation help more than keeping the information that text cleaning removes?
+
+Figure~\ref{fig:text-models} and Table~\ref{tab:text-cv} answer it. Segmenting words changes macro F1 by at most 1.1 points compared
+with plain syllables. Restoring what cleaning erases helps more: character n-grams on the uncleaned text add 2.8 points on task 1,
+and the 10 hand-crafted signals add 2.6 points on task 2. For Vietnamese spam, \emph{how} a review is written is as informative as
+the words it uses.
+
 \section{Limitations and Future Work}
-[Limitations, bias risks, data constraints, next steps.]
+\begin{itemize}[leftmargin=1.5cm]
+    \item Label noise: annotator agreement is 0.68--0.72 and 7 texts have conflicting labels; some errors in the error analysis are
+          probably labelling errors rather than model errors.
+    \item SPAM-1 is very small (195 training and 61 test reviews), so its F1 is unstable; part of the data is truncated at 300 characters.
+    \item The abbreviation list and the signals were defined by hand; the word segmenter fails on unaccented text and on missing sentence breaks;
+          a bag-of-words model cannot capture long context or sarcasm.
+    \item Only the authors' single split was used, and the deep learning scores come from the paper rather than from the same pipeline.
+    \item Future work: fine-tune PhoBERT on the same cleaned training data for a fair comparison and combine it with the hand-crafted signals,
+          tune the task 1 decision threshold when catching more spam matters more than precision, and relabel the short conflicting reviews.
+\end{itemize}
 
 \section{References}
-[Dataset source, papers, model documentation; use one citation style.]
+\begin{itemize}[leftmargin=1.5cm]
+    \item C. Van Dinh, S. T. Luu, A. G.-T. Nguyen, \textit{Detecting Spam Reviews on Vietnamese E-commerce Websites},
+          ACIIDS 2022, arXiv:2207.14636. Dataset: \url{https://github.com/sonlam1102/vispamdetection}, CC BY-NC 4.0.
+    \item underthesea contributors, \textit{underthesea: Vietnamese NLP Toolkit}, \url{https://github.com/undertheseanlp/underthesea}.
+    \item F. Pedregosa et al., \textit{Scikit-learn: Machine Learning in Python}, JMLR 12 (2011) 2825--2830.
+\end{itemize}
+
+\fussy
