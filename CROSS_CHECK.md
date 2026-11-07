@@ -9,7 +9,7 @@ Template trong `notebooks/templates/` chỉ là flow ban đầu. Bài làm đư�
 
 ## Cách tiến hành
 
-1. **Phân công xoay vòng:** Phát kiểm tra Tabular, Long kiểm tra Time series, Minh kiểm tra Text. Mỗi người đọc trọn một bài không phải của mình.
+1. **Phân công:** Phát kiểm tra Time series, Minh kiểm tra Tabular, Long kiểm tra Text. Mỗi người đọc trọn một bài không phải của mình.
 2. **Chạy lại trước khi đọc:** mở notebook từ link Colab trên landing page, chọn Runtime > Run all trên runtime mới. Nếu không chạy được thì các tiêu chí khác chưa có ý nghĩa.
 3. **Đọc ba thứ cùng lúc:** notebook, report PDF và trang con trên landing page, rồi đối chiếu số liệu giữa ba nơi.
 4. **Ghi kết quả** vào bảng ở cuối file (hoặc trong mô tả PR / issue), mỗi vấn đề một dòng.
