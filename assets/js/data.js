@@ -34,13 +34,13 @@ window.SITE_DATA = {
     {
       name: "Tô Anh Phát",
       studentId: "2580894",
-      github: null,
+      github: "https://github.com/pattan99",
       role: "Lead, Text project"
     },
     {
       name: "Trần Lê Hoàng Long",
       studentId: "2570443",
-      github: null,
+      github: "https://github.com/m00nLeo",
       role: "Lead, Tabular project"
     }
   ],
@@ -51,7 +51,7 @@ window.SITE_DATA = {
       type: "Text",
       title: "Text Data Analysis",
       summary: "Detecting spam reviews on Vietnamese e-commerce sites: is a review spam, and which kind (fake praise, shop/delivery only, or not a review at all)?",
-      problem: "Supervised text classification on Vietnamese reviews, with two tasks: spam vs not spam (task 1) and four classes NO-SPAM / SPAM-1 fake review / SPAM-2 shop or delivery only / SPAM-3 not a review (task 2). EDA is done on the training set only and shows that standard text cleaning erases many spam signals (emoji, repeated letters, gibberish, empty reviews). The models therefore combine word and character TF-IDF with 10 hand-crafted signals, and are compared with a majority-class baseline and with the deep learning results of the original paper using macro F1 on the official test set.",
+      problem: "Supervised text classification on Vietnamese reviews, with two tasks: spam vs not spam (task 1) and four classes NO-SPAM / SPAM-1 fake review / SPAM-2 shop or delivery only / SPAM-3 not a review (task 2). EDA is done on the training set only and shows that standard text cleaning erases many spam signals (emoji, repeated letters, gibberish, empty reviews). The representation and settings of each task are chosen by 3-fold cross-validation on the training set, because the dev set has only 25 fake reviews. The final model is the same pipeline for both tasks: word 1-2 gram and character 1-5 gram TF-IDF, 10 hand-crafted signals and the star rating, with a linear SVM (C = 0.3), trained separately on the labels of each task. Both models are compared with a majority-class baseline and with the five deep learning models of the original paper (TextCNN, LSTM, GRU, PhoBERT, BERT4News) using macro F1 on the official test set.",
       dataset: {
         name: "UIT-ViSpamReviews v1",
         url: "https://github.com/sonlam1102/vispamdetection",
@@ -65,8 +65,9 @@ window.SITE_DATA = {
       results: [
         { model: "Baseline (always NO-SPAM), task 1", metric: "Macro F1 (test)", value: "41.9" },
         { model: "Word + char TF-IDF + signals + Linear SVM, task 1", metric: "Macro F1 (test)", value: "85.4" },
+        { model: "BERT4News (paper), task 1", metric: "Macro F1 (test)", value: "86.2" },
         { model: "PhoBERT (paper), task 1", metric: "Macro F1 (test)", value: "86.9" },
-        { model: "Syllable TF-IDF + signals + Linear SVM, task 2", metric: "Macro F1 (test)", value: "74.0" },
+        { model: "Word + char TF-IDF + signals + Linear SVM, task 2", metric: "Macro F1 (test)", value: "76.3" },
         { model: "PhoBERT (paper), task 2", metric: "Macro F1 (test)", value: "72.2" }
       ]
     },
