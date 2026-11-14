@@ -28,13 +28,13 @@ MAE được ưu tiên hơn MAPE vì ban đêm chỉ có vài trăm xe, nên m�
           notebook tải đúng file gzip này từ kho UCI nên không cần API key.
     \item Nguồn: trạm ATR 301 của MnDOT; thời tiết theo giờ từ OpenWeatherMap; ngày lễ của Mỹ và bang Minnesota.
     \item Giai đoạn và tần suất: 02/10/2012 -- 30/09/2018, theo giờ, giờ địa phương (US Central).
-    \item Kích thước: 48,204 dòng, 9 cột. Theo lịch, giai đoạn này phải có 52,551 giờ.
-    \item Biến mục tiêu: \texttt{traffic\_volume} (0 đến 7,280 xe/giờ, trung bình $\approx$ 3,260).
+    \item Kích thước: 48\,204 dòng, 9 cột. Theo lịch, giai đoạn này phải có 52\,551 giờ.
+    \item Biến mục tiêu: \texttt{traffic\_volume} (0 đến 7280 xe/giờ, trung bình $\approx$ 3260).
           Các biến khác: \texttt{holiday}, \texttt{temp} (Kelvin), \texttt{rain\_1h}, \texttt{snow\_1h} (mm),
           \texttt{clouds\_all} (\%), \texttt{weather\_main} (11 nhóm) và \texttt{weather\_description} (38 giá trị).
     \item Giấy phép: CC BY 4.0 (J. Hogue, UCI Machine Learning Repository, 2019).
 \end{itemize}
-Trong chương này số được viết theo quy ước quốc tế (dấu phẩy ngăn hàng nghìn, dấu chấm thập phân) để khớp với các hình.
+Số thập phân dùng dấu chấm; hàng nghìn tách bằng khoảng trắng.
 
 \section{Chất lượng dữ liệu và làm sạch}
 Một chuỗi thời gian đều cần đúng một dòng cho mỗi bước thời gian và không thiếu bước nào, vì lag và cửa sổ trượt
@@ -48,12 +48,12 @@ Một chuỗi thời gian đều cần đúng một dòng cho mỗi bước th�
 \toprule
 Vấn đề & Quy mô & Cách xử lý\\
 \midrule
-Trùng mốc giờ (nhiều hiện tượng thời tiết trong một giờ) & 7,629 / 48,204 dòng (15.8\%) & Gộp về một dòng mỗi giờ, giữ số hiện tượng trong \texttt{n\_weather}\\
-Thiếu giờ (2012--2018) & 11,976 giờ (22.8\%) trong 2,588 đoạn, dài nhất 7,386 giờ ($\approx$ 10 tháng) & Chỉ giữ 01/2016 -- 09/2018\\
-Thiếu giờ trong giai đoạn đã chọn & 1,012 / 24,096 giờ (4.2\%), đoạn dài nhất 9 giờ & Reindex theo giờ, nội suy tuyến tính theo thời gian, cờ \texttt{is\_imputed}\\
-Lỗi cảm biến & 10 giờ \texttt{temp} = 0 K, 1 giờ \texttt{rain\_1h} = 9,831 mm & Đổi thành NaN rồi nội suy\\
+Trùng mốc giờ (nhiều hiện tượng thời tiết trong một giờ) & 7629 / 48\,204 dòng (15.8\%) & Gộp về một dòng mỗi giờ, giữ số hiện tượng trong \texttt{n\_weather}\\
+Thiếu giờ (2012--2018) & 11\,976 giờ (22.8\%) trong 2588 đoạn, dài nhất 7386 giờ ($\approx$ 10 tháng) & Chỉ giữ 01/2016 -- 09/2018\\
+Thiếu giờ trong giai đoạn đã chọn & 1012 / 24\,096 giờ (4.2\%), đoạn dài nhất 9 giờ & Reindex theo giờ, forward fill (chỉ dùng quá khứ), cờ \texttt{is\_filled}; giờ được điền chỉ làm đầu vào, không làm mục tiêu\\
+Lỗi cảm biến & 10 giờ \texttt{temp} = 0 K, 1 giờ \texttt{rain\_1h} = 9831 mm & Đổi thành NaN rồi điền như giờ thiếu\\
 Nhãn ngày lễ chỉ ở dòng 00:00 & 61 dòng & Lan nhãn cho cả 24 giờ trong ngày\\
-Ngoại lai của \texttt{traffic\_volume} & 1,016 giờ (4.2\%) theo rolling median/MAD & Giữ nguyên giá trị (sự kiện thật), cờ \texttt{is\_outlier} để phân tích lỗi\\
+Ngoại lai của \texttt{traffic\_volume} & 1016 giờ (4.2\%) theo rolling median/MAD & Giữ nguyên giá trị (sự kiện thật), cờ \texttt{is\_outlier} để phân tích lỗi\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -65,17 +65,20 @@ nguồn dữ liệu ghi mỗi hiện tượng thành một dòng và chép lại
 biến mục tiêu; ta giữ hiện tượng đầu tiên và lưu số hiện tượng vào \texttt{n\_weather}.
 
 \textbf{Giai đoạn nghiên cứu.} Phần lớn các đoạn thiếu chỉ dài một giờ (85\% số đoạn), nhưng 64\% số giờ bị thiếu đến từ
-các đoạn dài hơn một tuần, nhất là 7,386 giờ liên tiếp từ tháng 8/2014 đến tháng 6/2015 (Hình~\ref{fig:ts-missing}).
+các đoạn dài hơn một tuần, nhất là 7386 giờ liên tiếp từ tháng 8/2014 đến tháng 6/2015 (Hình~\ref{fig:ts-missing}).
 Không phép nội suy nào dựng lại được mười tháng, và lag theo tuần $y_{t-168}$ sẽ sai quanh những lỗ hổng như vậy.
 Do đó phân tích chỉ giữ giai đoạn \textbf{01/01/2016 -- 30/09/2018}: 2 năm 9 tháng, đủ để mỗi mùa xuất hiện ít nhất hai lần.
 Trong giai đoạn này 95.8\% số giờ có dữ liệu (so với 61.5\% trước đó) và đoạn thiếu dài nhất chỉ 9 giờ.
 
-\textbf{Nội suy.} Các đoạn thiếu dài tối đa 12 giờ (tức mọi đoạn thiếu trong giai đoạn đã chọn) được điền bằng nội suy
-tuyến tính theo thời gian với cột số và forward fill với cột phân loại. Lưu lượng và thời tiết thay đổi liên tục,
-còn forward fill sẽ ``đóng băng'' một giờ cao điểm đang tăng hoặc giảm; ngược lại, không thể lấy trung bình của hai nhãn thời tiết.
-Mỗi giờ được điền mang cờ \texttt{is\_imputed}, và mô hình chỉ được chấm điểm trên các giờ quan sát thật.
-Các giá trị vô lý về mặt vật lý (0 K, 9,831 mm mưa trong một giờ, khoảng 30 lần kỷ lục thế giới) là lỗi đo:
-chúng được đổi thành NaN và nội suy theo cùng cách. Cuối cùng, tên ngày lễ chỉ được ghi ở dòng 00:00 của mỗi ngày lễ,
+\textbf{Điền giá trị thiếu.} Các đoạn thiếu dài tối đa 12 giờ (tức mọi đoạn thiếu trong giai đoạn đã chọn) được điền bằng
+\textbf{forward fill} cho mọi cột, tức lấy giá trị quan sát gần nhất trong quá khứ. Nội suy tuyến tính vẽ được đường đẹp hơn qua
+một giờ cao điểm, nhưng nó dùng cả quan sát \emph{kế tiếp}: nếu $y_{t-1}$ bị thiếu, giá trị nội suy là trung bình của $y_{t-2}$
+và $y_t$, nên $y_{t-1}$ dùng làm lag của dòng $t$ sẽ chứa một phần chính mục tiêu $y_t$. Forward fill chỉ dùng quá khứ, nên giá trị
+được điền đúng là thứ người dự báo biết tại thời điểm đó.
+Mỗi giờ được điền mang cờ \texttt{is\_filled} và \textbf{chỉ được dùng làm đầu vào} (lag, cửa sổ trượt, baseline):
+các dòng có mục tiêu là giờ được điền bị loại khỏi huấn luyện và chấm điểm, nên mô hình chỉ học và chỉ được đánh giá trên lưu lượng
+quan sát thật. Các giá trị vô lý về mặt vật lý (0 K, 9831 mm mưa trong một giờ, khoảng 30 lần kỷ lục thế giới) là lỗi đo:
+chúng được đổi thành NaN và điền theo cùng cách. Cuối cùng, tên ngày lễ chỉ được ghi ở dòng 00:00 của mỗi ngày lễ,
 nên được lan ra cả ngày; bước này chỉ dùng lịch nên không làm rò rỉ thông tin tương lai.
 
 \begin{figure}[H]
@@ -86,15 +89,19 @@ nên được lan ra cả ngày; bước này chỉ dùng lịch nên không là
 \end{figure}
 
 \section{Phân tích khám phá dữ liệu (EDA)}
-Mọi phân tích dưới đây dùng giai đoạn nghiên cứu (24,096 giờ). Tổng theo ngày, phân rã mùa vụ và ACF cần chuỗi không có lỗ hổng
-nên dùng một bản sao đã nội suy.
+\textbf{Phạm vi: chỉ giai đoạn train} (01/2016 -- 11/2017, 16\,800 giờ). Phần kiểm tra chất lượng ở trên nhìn toàn bộ tệp vì nó
+đánh giá dữ liệu và chọn giai đoạn nghiên cứu. Phần EDA thì khác: nó sinh ra các lựa chọn cho mô hình (chu kỳ, \texttt{LAGS},
+bậc ARIMA, danh sách ngày lễ lớn, biến thời tiết). Nếu EDA nhìn cả validation và test, tập test sẽ không còn độc lập; chẳng hạn
+Quốc khánh 2018 (thuộc test) sẽ vừa giúp chọn đặc trưng ngày lễ, vừa được dùng để chứng minh đặc trưng đó có ích.
+Validation và test chỉ được dùng từ Mục~\ref{sec:ts-models}. Tổng theo ngày, phân rã mùa vụ và ACF cần chuỗi không có lỗ hổng
+nên dùng một bản sao nội suy tạm thời; bản này chỉ để mô tả, không bao giờ làm đầu vào của mô hình.
 
 \subsection{Toàn cảnh và phân phối của biến mục tiêu}
 Hình~\ref{fig:ts-fingerprint} vẽ toàn bộ các giờ của giai đoạn cùng lúc: mỗi cột là một ngày, mỗi hàng là một giờ trong ngày.
 Các dải ngang đậm quanh 6--8h và 15--17h là giờ cao điểm sáng và chiều, bị cắt đều đặn bởi các sọc dọc nhạt (thứ Bảy và Chủ nhật).
 Những đường trắng đơn lẻ giữa tuần là ngày lễ, bão tuyết hoặc đóng đường.
 Không vùng nào đậm dần hay nhạt dần theo thời gian, nên chuỗi \textbf{không có xu hướng dài hạn}; trung bình ngày giữ quanh
-3,300 xe/giờ suốt ba năm, chỉ giảm ngắn quanh dịp năm mới.
+3300 xe/giờ suốt hai năm, chỉ giảm ngắn quanh dịp năm mới.
 
 \begin{figure}[H]
 \centering
@@ -103,8 +110,8 @@ Không vùng nào đậm dần hay nhạt dần theo thời gian, nên chuỗi \
 \label{fig:ts-fingerprint}
 \end{figure}
 
-Phân phối của \texttt{traffic\_volume} có \textbf{hai đỉnh}: 21.9\% số giờ có dưới 1,000 xe (ban đêm)
-và 44.7\% có từ 4,000 xe trở lên (ban ngày). Độ lệch chuẩn ($\approx$ 1,970) bằng khoảng 60\% trung bình ($\approx$ 3,300).
+Phân phối của \texttt{traffic\_volume} có \textbf{hai đỉnh}: 21.9\% số giờ có dưới 1000 xe (ban đêm)
+và 44.9\% có từ 4000 xe trở lên (ban ngày). Độ lệch chuẩn ($\approx$ 1970) bằng khoảng 60\% trung bình ($\approx$ 3300).
 Tuy nhiên, trong cùng một giờ của ngày, độ phân tán lại hẹp (Hình~\ref{fig:ts-target-hour}): phần lớn biến động được giải thích
 bởi đồng hồ chứ không phải nhiễu. Vì vậy mô hình bắt buộc phải biết giờ, qua đặc trưng lịch hoặc các lag
 $y_{t-24}$ và $y_{t-168}$.
@@ -117,11 +124,11 @@ $y_{t-24}$ và $y_{t-168}$.
 \end{figure}
 
 \subsection{Mùa vụ theo giờ, theo tuần và theo tháng}
-Giờ đông nhất (16h, $\approx$ 5,740 xe) gấp khoảng \textbf{15 lần} giờ vắng nhất (3h, $\approx$ 380),
-thứ Sáu đông gấp 1.5 lần Chủ nhật, trong khi tháng đông nhất (tháng 3) chỉ hơn tháng vắng nhất (tháng 1) khoảng \textbf{12\%}.
+Giờ đông nhất (16h, $\approx$ 5730 xe) gấp khoảng \textbf{15 lần} giờ vắng nhất (3h, $\approx$ 390),
+thứ Năm đông gấp 1.5 lần Chủ nhật, trong khi tháng đông nhất (tháng 3) chỉ hơn tháng vắng nhất (tháng 7) khoảng \textbf{13\%}.
 Hai đỉnh 6--7h và 15--17h chỉ có từ thứ Hai đến thứ Sáu (đi làm); cuối tuần chỉ có một đỉnh rộng quanh trưa
 (Hình~\ref{fig:ts-heatmap}). Hình dạng của một ngày thường gần như giống nhau ở mọi mùa; khác biệt rõ nhất là đỉnh sáng
-mùa đông thấp hơn khoảng 6\%. Như vậy chu kỳ ngày và tuần chi phối chuỗi và phải được mã hóa,
+mùa đông thấp hơn khoảng 4\%. Như vậy chu kỳ ngày và tuần chi phối chuỗi và phải được mã hóa,
 còn chu kỳ năm chỉ là hiệu chỉnh nhỏ (tháng dạng sin/cos).
 
 \begin{figure}[H]
@@ -143,16 +150,16 @@ $F_S = \max\left(0,\ 1 - \operatorname{Var}(R)/\operatorname{Var}(S + R)\right)$
 
 \begin{table}[H]
 \centering
-\caption{Phân rã MSTL trên giai đoạn nghiên cứu (chu kỳ 24 và 168 giờ)}
+\caption{Phân rã MSTL trên giai đoạn train (chu kỳ 24 và 168 giờ)}
 \label{tab:ts-mstl}
 \begin{tabular}{lrr}
 \toprule
 Thành phần & Tỷ lệ phương sai (\%) & Độ mạnh mùa vụ (0--1)\\
 \midrule
 Xu hướng & 1.2 & --\\
-Mùa vụ ngày (24 giờ) & 79.0 & 0.953\\
-Mùa vụ tuần (168 giờ) & 15.4 & 0.798\\
-Phần dư & 3.9 & --\\
+Mùa vụ ngày (24 giờ) & 79.2 & 0.955\\
+Mùa vụ tuần (168 giờ) & 15.3 & 0.804\\
+Phần dư & 3.7 & --\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -160,34 +167,34 @@ Phần dư & 3.9 & --\\
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_mstl.png}{Phân rã MSTL trong ba tuần.}
-\caption{MSTL trong ba tuần tháng 3/2018: xu hướng gần như không đổi, mùa vụ ngày lặp lại mỗi ngày, mùa vụ tuần giảm vào cuối tuần, còn phần dư nhỏ với vài đỉnh ở các giờ bất thường.}
+\caption{MSTL trong ba tuần tháng 3/2017: xu hướng gần như không đổi, mùa vụ ngày lặp lại mỗi ngày, mùa vụ tuần giảm vào cuối tuần, còn phần dư nhỏ với vài đỉnh ở các giờ bất thường.}
 \label{fig:ts-mstl}
 \end{figure}
 
 Nói đơn giản, \textbf{chỉ cần biết giờ và thứ là đã giải thích được khoảng 95\% biến động} (Bảng~\ref{tab:ts-mstl},
 Hình~\ref{fig:ts-mstl}); chỉ phần dư (sự kiện, thời tiết) là khó. Xu hướng gần như phẳng nên không cần sai phân để khử xu hướng.
-Thứ mô hình phải nắm được là hai chu kỳ lồng nhau; riêng chu kỳ ngày đã dao động khoảng 5,300 xe.
+Thứ mô hình phải nắm được là hai chu kỳ lồng nhau; riêng chu kỳ ngày đã dao động khoảng 5300 xe.
 
 \subsection{Tự tương quan và tính dừng}
 Hàm tự tương quan $\text{ACF}(k) = \operatorname{corr}(y_t, y_{t-k})$ có dạng sóng chu kỳ 24 giờ (Hình~\ref{fig:ts-acf}):
 âm ở lag 12 ($-0.62$, ngày so với đêm), cao ở lag 24 (0.87) và cao nhất ở \textbf{lag 168 (0.94)}.
 ``Cùng giờ tuần trước'' giống hiện tại hơn ``cùng giờ hôm qua'', vì hôm qua có thể là ngày cuối tuần.
-PACF lớn ở lag 1 (0.91) và âm mạnh ở lag 2 ($-0.67$), gợi ý phần tự hồi quy bậc 2--3, còn hai chu kỳ được xử lý riêng.
+PACF lớn ở lag 1 (0.91) và âm mạnh ở lag 2 ($-0.66$), gợi ý phần tự hồi quy bậc 2--3, còn hai chu kỳ được xử lý riêng.
 Do đó các lag được dùng làm đặc trưng là \texttt{LAGS} = 1, 2, 3, 24, 168.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_acf_pacf.png}{ACF đến 15 ngày và PACF.}
-\caption{Tự tương quan đạt đỉnh mỗi 24 giờ và cao nhất ở 168 giờ (0.94): chu kỳ ngày và chu kỳ tuần. PACF tắt sau vài lag đầu.}
+\caption{Tự tương quan đạt đỉnh mỗi 24 giờ và cao nhất ở 168 giờ (0.94): chu kỳ ngày và chu kỳ tuần. PACF lớn ở vài lag đầu, sau đó chỉ còn các cụm nhỏ quanh lag 24.}
 \label{fig:ts-acf}
 \end{figure}
 
 Hai kiểm định bổ sung cho nhau được dùng để kiểm tra tính dừng: ADF (giả thuyết không: có nghiệm đơn vị) và KPSS
 (giả thuyết không: chuỗi dừng). ADF bác bỏ nghiệm đơn vị cho chuỗi gốc, chuỗi đã khử mùa vụ và chuỗi sai phân tuần
-($p \approx 0$), nên không có xu hướng dạng bước ngẫu nhiên. KPSS vẫn bác bỏ tính dừng với chuỗi gốc ($p = 0.03$) và chuỗi đã
-khử mùa vụ ($p = 0.01$) vì mức trung bình trôi chậm theo mùa và KPSS rất nhạy khi $n \approx 24{,}000$; chuỗi sai phân tuần
+($p \approx 0$), nên không có xu hướng dạng bước ngẫu nhiên. KPSS vẫn bác bỏ tính dừng với chuỗi gốc và chuỗi đã
+khử mùa vụ ($p = 0.01$, giá trị nhỏ nhất kiểm định báo ra) vì mức trung bình trôi chậm theo mùa và KPSS rất nhạy khi $n \approx 16\,800$; chuỗi sai phân tuần
 $y_t - y_{t-168}$ qua được cả hai kiểm định. Hệ quả là mô hình ARIMA không cần sai phân thường ($d = 0$), nhưng các chu kỳ
-phải được xử lý tường minh. Một seasonal ARIMA với chu kỳ $m = 168$ quá nặng để ước lượng trên khoảng 17,000 giờ huấn luyện,
+phải được xử lý tường minh. Một seasonal ARIMA với chu kỳ $m = 168$ quá nặng để ước lượng trên khoảng 15\,700 giờ huấn luyện,
 nên Mục~\ref{sec:ts-models} dùng các số hạng Fourier thay thế.
 
 \subsection{Câu hỏi 1: Thời tiết xấu làm lưu lượng giảm bao nhiêu?}
@@ -196,17 +203,17 @@ Vì vậy mỗi giờ ban ngày (6h--20h, không phải ngày lễ, có dữ li�
 \[
 \text{chênh lệch}_t = \frac{y_t - \operatorname{median}(y \mid \text{thứ}, \text{giờ})}{\operatorname{median}(y \mid \text{thứ}, \text{giờ})}.
 \]
-Trên 13,948 giờ ban ngày, phần lớn loại thời tiết chỉ làm lưu lượng lệch dưới 2--3\%, và tương quan giữa các biến thời tiết dạng số
-với độ chênh lệch đều dưới 0.13 về trị tuyệt đối. Ngoại lệ rõ rệt là \textbf{tuyết: trung bình $-10.6\%$}
-(879 giờ, khoảng tin cậy 95\% là $\pm 1.1$ điểm phần trăm), và $-13.6\%$ với mọi giờ mưa hoặc tuyết ``heavy''.
-Ảnh hưởng tăng theo cường độ (Hình~\ref{fig:ts-weather}): tuyết nhẹ $\approx -7\%$, tuyết $\approx -27\%$ và
-\textbf{tuyết lớn $\approx -43\%$}; mưa lớn $\approx -8\%$, còn mưa nhẹ và mưa vừa gần như không ảnh hưởng.
-Nhiệt độ chỉ liên hệ yếu với tổng lưu lượng ngày ($r = 0.14$ vào ngày thường).
+Trên 9516 giờ ban ngày, phần lớn loại thời tiết chỉ làm lưu lượng lệch dưới 4\%, và tương quan giữa các biến thời tiết dạng số
+với độ chênh lệch đều dưới 0.09 về trị tuyệt đối. Ngoại lệ rõ rệt là \textbf{tuyết: trung bình $-6.9\%$}
+(496 giờ, khoảng tin cậy 95\% là $\pm 1.2$ điểm phần trăm), và $-10.1\%$ với mọi giờ mưa hoặc tuyết ``heavy''.
+Ảnh hưởng tăng theo cường độ (Hình~\ref{fig:ts-weather}): tuyết nhẹ $\approx -5\%$ và \textbf{tuyết (mức vừa) $\approx -21\%$};
+tuyết lớn có dưới 20 giờ ban ngày trong train nên không đủ để đo. Mưa lớn $\approx -9\%$, còn mưa nhẹ và mưa vừa gần như không ảnh hưởng.
+Nhiệt độ chỉ liên hệ yếu với tổng lưu lượng ngày ($r = 0.05$ vào ngày thường).
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_weather_intensity.png}{Chênh lệch theo mô tả thời tiết.}
-\caption{Chênh lệch so với cùng thứ-cùng giờ theo mô tả thời tiết: tuyết lớn làm giảm 43\% lưu lượng ban ngày, tuyết nhẹ 7\%; mưa chỉ đáng kể khi là mưa lớn (kích thước điểm $\propto \sqrt{n}$).}
+\caption{Chênh lệch so với cùng thứ-cùng giờ theo mô tả thời tiết: tuyết mức vừa làm giảm 21\% lưu lượng ban ngày, tuyết nhẹ 5\%; mưa chỉ đáng kể khi là mưa lớn (kích thước điểm $\propto \sqrt{n}$).}
 \label{fig:ts-weather}
 \end{figure}
 
@@ -214,13 +221,13 @@ Như vậy thời tiết \textbf{hiếm khi quan trọng nhưng khi có thì tá
 biến mang thông tin cường độ, được giữ làm biến phân loại, và các mô hình cây được kỳ vọng khai thác nó tốt hơn mô hình tuyến tính.
 
 \subsection{Câu hỏi 2: Ngày lễ làm lưu lượng giảm bao nhiêu, và mọi ngày lễ có như nhau?}
-Trung bình một ngày lễ có \textbf{tổng lưu lượng thấp hơn ngày thường 28\%} (62,317 so với 86,657 xe/ngày),
-gần bằng cuối tuần ($-26\%$), và cao điểm sáng của ngày lễ chỉ bằng khoảng một nửa ngày thường.
+Trung bình một ngày lễ có \textbf{tổng lưu lượng thấp hơn ngày thường 26\%} (64\,471 so với 86\,677 xe/ngày),
+ngang với cuối tuần ($-26\%$), và cao điểm sáng của ngày lễ chỉ bằng khoảng một nửa ngày thường.
 Con số trung bình che giấu khác biệt lớn. So sánh từng ngày lễ với một ngày bình thường (trung vị tổng lưu lượng của cùng thứ
 trong bốn tuần trước và sau, không tính ngày lễ) cho Hình~\ref{fig:ts-holiday}:
 \begin{itemize}[leftmargin=1.5cm]
     \item sáu ngày lễ lớn (Năm mới, Lễ Tạ ơn, Quốc khánh, Giáng sinh, Memorial Day, Labor Day) giảm 33--49\%;
-    \item Martin Luther King Jr Day và Washington's Birthday giảm 9--28\%, vì nhiều nơi vẫn làm việc;
+    \item Martin Luther King Jr Day và Washington's Birthday giảm 9--14\%, vì nhiều nơi vẫn làm việc;
     \item Veterans Day và Columbus Day gần như không giảm ($-4\%$ đến $0\%$);
     \item các ngày \textbf{State Fair} của bang Minnesota, vốn không phải ngày nghỉ, thậm chí tăng 1--5\%.
 \end{itemize}
@@ -228,7 +235,7 @@ trong bốn tuần trước và sau, không tính ngày lễ) cho Hình~\ref{fig
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_holiday_each.png}{Từng ngày lễ so với một ngày bình thường.}
-\caption{Từng ngày lễ so với một ngày bình thường cùng thứ: từ $-49\%$ (Năm mới) đến $+5\%$ (State Fair).}
+\caption{Từng ngày lễ so với một ngày bình thường cùng thứ: từ $-49\%$ (Lễ Tạ ơn) đến $+5\%$ (State Fair).}
 \label{fig:ts-holiday}
 \end{figure}
 
@@ -244,18 +251,18 @@ z^{\text{std}}_t = \frac{r_t - \operatorname{mean}_{168}(r)}{\operatorname{std}_
 z^{\text{robust}}_t = \frac{r_t - \operatorname{median}_{168}(r)}{1.4826 \cdot \operatorname{MAD}_{168}(r)},
 \]
 và một giờ bị đánh dấu khi $|z_t| > 3.5$ (ngưỡng Iglewicz--Hoaglin). Một \emph{giờ đóng đường} được định nghĩa là giờ ban ngày
-(7h--19h) có dưới 300 xe trong khi giá trị thông thường của giờ đó trong tuần lớn hơn 3,000.
+(7h--19h) có dưới 300 xe trong khi giá trị thông thường của giờ đó trong tuần lớn hơn 3000.
 
 \begin{table}[H]
 \centering
-\caption{Rolling mean/std so với rolling median/MAD trên giai đoạn nghiên cứu}
+\caption{Rolling mean/std so với rolling median/MAD trên giai đoạn train}
 \label{tab:ts-outlier}
 \begin{tabular}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedleft\arraybackslash}p{3.2cm}>{\raggedleft\arraybackslash}p{3.2cm}>{\raggedleft\arraybackslash}p{3.2cm}}
 \toprule
 Phương pháp & Số giờ bị đánh dấu & Giờ đóng đường bắt được (/14) & Giờ bị đánh dấu vào ngày lễ\\
 \midrule
-Rolling mean / std & 248 (1.0\%) & 0 & 52\\
-Rolling median / MAD & 1,016 (4.2\%) & 14 & 184\\
+Rolling mean / std & 168 (1.0\%) & 0 & 32\\
+Rolling median / MAD & 640 (3.8\%) & 14 & 114\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -278,7 +285,7 @@ tức có nhìn vào tương lai.
 
 \subsection{Tạo đặc trưng}
 Mỗi dòng tại thời điểm $t$ dự báo $y_t$ chỉ bằng thông tin có sẵn tại $t - 1$ (Bảng~\ref{tab:ts-features}).
-Sau khi bỏ 168 giờ đầu chưa có lag tuần, còn 23,928 dòng với 21 đặc trưng số và 2 đặc trưng phân loại.
+Sau khi bỏ 168 giờ đầu chưa có lag tuần và 959 giờ có mục tiêu được điền, còn 22\,969 dòng với 21 đặc trưng số và 2 đặc trưng phân loại.
 
 \begin{table}[H]
 \centering
@@ -288,7 +295,7 @@ Sau khi bỏ 168 giờ đầu chưa có lag tuần, còn 23,928 dòng với 21 �
 \toprule
 Nhóm & Đặc trưng & Chống rò rỉ\\
 \midrule
-Lag & $y_{t-k}$ với $k$ = 1, 2, 3, 24, 168 (từ ACF/PACF) & chỉ dùng $k \ge$ \texttt{HORIZON}\\
+Lag & $y_{t-k}$ với $k$ = 1, 2, 3, 24, 168 (từ ACF/PACF) & chỉ dùng $k \ge$ \texttt{HORIZON}; giờ được điền lấy từ quá khứ\\
 Rolling & trung bình và độ lệch chuẩn của mục tiêu trong 24 giờ qua & tính trên $y$ đã dịch 1 giờ\\
 Lịch & giờ, thứ, tháng dạng cặp sin/cos; \texttt{is\_weekend} & biết trước\\
 Ngày lễ & \texttt{is\_holiday}, \texttt{is\_major\_holiday} & lịch ngày lễ biết trước\\
@@ -312,19 +319,19 @@ một dòng train, và mô hình sẽ được chấm điểm trên những giá
 \small
 \begin{tabular}{llrrrr}
 \toprule
-Tập & Giai đoạn & Số dòng & TB (xe/giờ) & \% nội suy & \% giờ có tuyết\\
+Tập & Giai đoạn & Số dòng & TB (xe/giờ) & Giờ điền & \% có tuyết\\
 \midrule
-Train & 08/01/2016 -- 30/11/2017 & 16,632 (69.5\%) & 3,322 & 5.6 & 5.7\\
-Validation & 01/12/2017 -- 30/04/2018 & 3,624 (15.1\%) & 3,240 & 0.5 & 17.6\\
-Test & 01/05/2018 -- 30/09/2018 & 3,672 (15.3\%) & 3,358 & 0.2 & 0.0\\
+Train & 08/01/2016 -- 30/11/2017 & 15\,696 (68.3\%) & 3301 & 936 & 5.3\\
+Validation & 01/12/2017 -- 30/04/2018 & 3607 (15.7\%) & 3248 & 17 & 17.6\\
+Test & 01/05/2018 -- 30/09/2018 & 3666 (16.0\%) & 3359 & 6 & 0.0\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Ba tập có trung bình gần nhau và cùng phân phối hai đỉnh nhưng khác nhau về mùa (Bảng~\ref{tab:ts-split},
 Hình~\ref{fig:ts-split}): validation là đông--xuân với 17.6\% số giờ có tuyết, còn test là mùa hè, không có tuyết.
-Vì vậy điểm trên tập test không nói gì về bão tuyết. Gần như toàn bộ giờ được nội suy nằm trong train;
-validation và test có ít nhất 99.5\% là dữ liệu thật.
+Vì vậy điểm trên tập test không nói gì về bão tuyết. Gần như toàn bộ giờ được điền nằm trong train, và chúng chỉ là đầu vào:
+mọi mục tiêu trong cả ba tập đều là giờ quan sát thật.
 
 \begin{figure}[H]
 \centering
@@ -338,9 +345,9 @@ Các đặc trưng số được chuẩn hóa bằng \texttt{StandardScaler} (c�
 được mã hóa bằng \texttt{OneHotEncoder(handle\_unknown="ignore")}, để một loại lần đầu xuất hiện trong test thành vector 0
 thay vì gây lỗi. Cả hai bước nằm trong \texttt{Pipeline} của từng mô hình scikit-learn và chỉ được fit trên các dòng train,
 kể cả trong từng fold cross-validation. 23 đặc trưng trở thành 65 cột đầu vào.
-Trên tập train, $y_{t-168}$ ($r = 0.95$), $y_{t-1}$ (0.91) và $y_{t-24}$ (0.87) là các biến tương quan tuyến tính mạnh nhất,
-tiếp theo là \texttt{hour\_cos} ($-0.77$); mọi biến thời tiết đều có $|r| \le 0.12$. Các lag 1--3 tương quan mạnh với nhau
-($\ge 0.72$), nên mô hình tuyến tính được chọn là Ridge (có phạt L2) thay vì bình phương tối thiểu thông thường.
+Trên tập train, $y_{t-168}$ ($r = 0.95$), $y_{t-1}$ (0.90) và $y_{t-24}$ (0.86) là các biến tương quan tuyến tính mạnh nhất,
+tiếp theo là \texttt{hour\_cos} ($-0.77$); mọi biến thời tiết đều có $|r| \le 0.10$. Các lag 1--3 tương quan mạnh với nhau
+($\ge 0.71$), nên mô hình tuyến tính được chọn là Ridge (có phạt L2) thay vì bình phương tối thiểu thông thường.
 
 \section{Mô hình và thiết lập thực nghiệm}
 \label{sec:ts-models}
@@ -372,15 +379,17 @@ y_t = c + \sum_{k=1}^{K}\left[a_k \sin\frac{2\pi k t}{168} + b_k \cos\frac{2\pi 
 \]
 Các họa âm $k = 7, 14, 21, \dots$ có chu kỳ 24 giờ, nên chu kỳ ngày cũng được bao gồm. $x_t$ chứa các cờ ngày lễ và tương tác
 của chúng với ba họa âm ngày đầu tiên, vì ngày lễ làm thay đổi \emph{hình dạng} của cả ngày. Bậc $(3, 0, 0)$ được chọn theo PACF
-và các kiểm định tính dừng ($d = 0$). $K$ được chọn trên validation trong các giá trị 21, 42 và 63, và dự báo là một bước:
+và các kiểm định tính dừng ($d = 0$). SARIMAX được fit trên chuỗi đã forward fill: nếu còn NaN, bộ lọc Kalman không đạt được
+trạng thái dừng và mỗi lần fit chậm khoảng mười lần. Giá trị điền chỉ lấy từ quá khứ nên không rò rỉ, và vẫn bị loại khỏi phần chấm điểm.
+$K$ được chọn trên validation trong các giá trị 21, 42 và 63, và dự báo là một bước:
 tham số được fit trên train, các giờ validation chỉ được lọc qua mô hình, nên dự báo cho giờ $t$ chỉ dùng quan sát đến $t-1$,
 giống hệt các mô hình khác.
 
 \textbf{Tinh chỉnh siêu tham số.} HistGradientBoosting được tinh chỉnh bằng \texttt{GridSearchCV} trên learning rate,
 số vòng lặp và số lá, dùng \texttt{TimeSeriesSplit} trên tập train: mỗi fold luôn học trên quá khứ và đánh giá trên giai đoạn
 ngay sau đó, khác với $k$-fold thông thường. Mô hình có MAE validation tốt nhất được fit lại trên train + validation
-(dữ liệu gần nhất quan trọng nhất cho dự báo) và chấm điểm một lần trên tập test. Với \texttt{EVAL\_ON\_OBSERVED\_ONLY},
-các giờ nội suy bị loại khỏi mọi phép tính điểm, và MAPE chỉ tính trên các giờ có mục tiêu khác 0.
+(dữ liệu gần nhất quan trọng nhất cho dự báo) và chấm điểm một lần trên tập test. Mọi điểm số đều tính trên giờ quan sát thật,
+và MAPE chỉ tính trên các giờ có mục tiêu khác 0.
 
 \section{Kết quả và đánh giá}
 
@@ -394,14 +403,14 @@ các giờ nội suy bị loại khỏi mọi phép tính điểm, và MAPE ch�
 \toprule
 Mô hình & MAE & RMSE & MAPE (\%) & $R^2$ & Skill so với naive\\
 \midrule
-\textbf{HistGradientBoosting (tuned)} & \textbf{171.7} & \textbf{267.4} & \textbf{7.75} & \textbf{0.982} & \textbf{+70.5\%}\\
-HistGradientBoosting (mặc định) & 175.3 & 272.4 & 7.98 & 0.981 & +69.9\%\\
-Random Forest & 186.6 & 305.5 & 8.00 & 0.976 & +67.9\%\\
-SARIMAX(3,0,0) + Fourier $K = 63$ & 199.1 & 334.1 & 11.47 & 0.971 & +65.8\%\\
-Ridge & 318.8 & 447.4 & 17.21 & 0.949 & +45.2\%\\
-Seasonal naive ($t-168$) & 449.1 & 781.5 & 18.13 & 0.843 & +22.8\%\\
-Naive ($t-1$) & 581.7 & 802.3 & 27.35 & 0.835 & 0.0\%\\
-Seasonal naive ($t-24$) & 629.1 & 1,067.1 & 29.13 & 0.708 & $-8.2\%$\\
+\textbf{HistGradientBoosting (tuned)} & \textbf{182.5} & \textbf{294.5} & \textbf{8.04} & \textbf{0.978} & \textbf{+68.7\%}\\
+HistGradientBoosting (mặc định) & 186.4 & 296.9 & 8.48 & 0.977 & +68.0\%\\
+Random Forest & 199.3 & 339.4 & 8.38 & 0.970 & +65.8\%\\
+SARIMAX(3,0,0) + Fourier $K = 63$ & 208.1 & 343.5 & 12.56 & 0.970 & +64.3\%\\
+Ridge & 327.6 & 464.4 & 18.26 & 0.945 & +43.8\%\\
+Seasonal naive ($t-168$) & 447.6 & 779.5 & 17.90 & 0.844 & +23.2\%\\
+Naive ($t-1$) & 582.6 & 803.2 & 27.43 & 0.834 & 0.0\%\\
+Seasonal naive ($t-24$) & 627.3 & 1065.5 & 28.84 & 0.709 & $-7.7\%$\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -414,16 +423,16 @@ Seasonal naive ($t-24$) & 629.1 & 1,067.1 & 29.13 & 0.708 & $-8.2\%$\\
 \end{figure}
 
 Mọi mô hình đều vượt xa các baseline naive (Bảng~\ref{tab:ts-val}, Hình~\ref{fig:ts-val}).
-Baseline tốt nhất là \textbf{seasonal naive ``cùng giờ tuần trước''} (MAE 449), đúng như ACF đã gợi ý; ``cùng giờ hôm qua''
-còn tệ hơn naive thông thường (629 so với 582) vì nó chép một ngày Chủ nhật sang thứ Hai.
+Baseline tốt nhất là \textbf{seasonal naive ``cùng giờ tuần trước''} (MAE 448), đúng như ACF đã gợi ý; ``cùng giờ hôm qua''
+còn tệ hơn naive thông thường (627 so với 583) vì nó chép một ngày Chủ nhật sang thứ Hai.
 Hai mô hình cây dẫn đầu vì kết hợp được lag với giờ, thứ và cờ ngày lễ một cách phi tuyến.
-\textbf{SARIMAX + Fourier đứng thứ ba với khoảng cách nhỏ} (MAE 199), vượt xa Ridge. Tăng số họa âm giúp rất nhiều
-($K = 21$: MAE 317, $K = 42$: 224, $K = 63$: 199) vì các đỉnh giờ cao điểm ngày thường rất nhọn; hệ số AR(1) bằng 0.86 cho thấy
+\textbf{SARIMAX + Fourier đứng thứ ba với khoảng cách nhỏ} (MAE 208), vượt xa Ridge. Tăng số họa âm giúp rất nhiều
+($K = 21$: MAE 332, $K = 42$: 228, $K = 63$: 208) vì các đỉnh giờ cao điểm ngày thường rất nhọn; hệ số AR(1) bằng 0.71 cho thấy
 sai số vẫn tương quan từ giờ này sang giờ kế tiếp. SARIMAX chỉ dùng lịch và quá khứ của chuỗi, hoàn toàn diễn giải được,
 nhưng mỗi lần fit mất 10--30 giây thay vì khoảng một giây. Ridge tuyến tính theo \texttt{hour\_sin} / \texttt{hour\_cos}
 nên không vẽ được một ngày có hai đỉnh, và gần như chỉ dựa vào các lag.
-Tinh chỉnh (learning rate 0.05, 31 lá, 300 vòng lặp; MAE cross-validation trên train là 190) chỉ cải thiện MAE validation
-của HistGradientBoosting 2\%, từ 175 xuống 172: cấu hình mặc định đã gần tối ưu.
+Tinh chỉnh (learning rate 0.05, 31 lá, 300 vòng lặp; MAE cross-validation trên train là 187) chỉ cải thiện MAE validation
+của HistGradientBoosting 2\%, từ 186 xuống 183: cấu hình mặc định đã gần tối ưu.
 
 \subsection{Kết quả trên tập test}
 \begin{table}[H]
@@ -435,52 +444,54 @@ của HistGradientBoosting 2\%, từ 175 xuống 172: cấu hình mặc định 
 \toprule
 Mô hình & MAE & RMSE & MAPE (\%) & $R^2$ & Skill so với naive\\
 \midrule
-Naive ($t-1$) & 582.8 & 810.1 & 26.04 & 0.828 & 0.0\%\\
-Seasonal naive ($t-24$) & 512.0 & 981.7 & 21.99 & 0.748 & +12.2\%\\
+Naive ($t-1$) & 583.2 & 810.4 & 26.07 & 0.828 & 0.0\%\\
+Seasonal naive ($t-24$) & 512.0 & 981.7 & 22.01 & 0.748 & +12.2\%\\
 Seasonal naive ($t-168$) & 257.2 & 535.1 & 10.41 & 0.925 & +55.9\%\\
-\textbf{HistGradientBoosting (tuned)} & \textbf{131.5} & \textbf{201.8} & \textbf{5.34} & \textbf{0.989} & \textbf{+77.4\%}\\
+\textbf{HistGradientBoosting (tuned)} & \textbf{131.2} & \textbf{201.7} & \textbf{5.34} & \textbf{0.989} & \textbf{+77.5\%}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Trên tập test, mô hình cuối cùng đạt \textbf{MAE 131.5 xe/giờ}, giảm 77.4\% so với dự báo naive và chỉ bằng khoảng một nửa
+Trên tập test, mô hình cuối cùng đạt \textbf{MAE 131.2 xe/giờ}, giảm 77.5\% so với dự báo naive và chỉ bằng khoảng một nửa
 sai số của baseline tốt nhất (Bảng~\ref{tab:ts-results}). Ở thang ngày, dự báo bám sát chuỗi thực tế; ở thang giờ, nó bắt được
 mọi giờ cao điểm, trong khi dự báo naive luôn trễ một giờ (Hình~\ref{fig:ts-forecast}). MAE trên test thấp hơn trên validation
-(172) vì giai đoạn test là mùa hè không có tuyết, dễ dự báo hơn.
+(183) vì giai đoạn test là mùa hè không có tuyết, dễ dự báo hơn.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_forecast_test.png}{Dự báo so với thực tế trên tập test.}
-\caption{Dự báo so với thực tế trên test: MAE 132 xe/giờ (skill $+77\%$ so với naive). Trên: trung bình ngày trong toàn bộ giai đoạn test; dưới: hai tuần cuối theo từng giờ, dự báo naive trễ một giờ.}
+\caption{Dự báo so với thực tế trên test: MAE 131 xe/giờ (skill $+78\%$ so với naive). Trên: trung bình ngày trong toàn bộ giai đoạn test; dưới: hai tuần cuối theo từng giờ, dự báo naive trễ một giờ.}
 \label{fig:ts-forecast}
 \end{figure}
 
 \textbf{Đặc trưng ngày lễ có giúp ích không?} Giai đoạn test chứa Memorial Day, Quốc khánh (4/7) và Labor Day.
-Quốc khánh 2018 rơi vào thứ Tư: dự báo seasonal naive lặp lại một thứ Tư bình thường và sai trung bình 1,957 xe/giờ,
+Danh sách ngày lễ lớn được chọn chỉ trên train, nên đây là một phép kiểm tra trên dữ liệu chưa thấy.
+Quốc khánh 2018 rơi vào thứ Tư: dự báo seasonal naive lặp lại một thứ Tư bình thường và sai trung bình 1957 xe/giờ,
 trong khi mô hình, nhờ biết \texttt{is\_holiday} / \texttt{is\_major\_holiday} và thấy các lag buổi sáng thấp,
-chỉ sai \textbf{235 xe/giờ} (Hình~\ref{fig:ts-holiday-forecast}). Đây là câu trả lời thực tế cho câu hỏi về ngày lễ ở phần EDA.
+chỉ sai \textbf{251 xe/giờ} (Hình~\ref{fig:ts-holiday-forecast}). Đây là câu trả lời thực tế cho câu hỏi về ngày lễ ở phần EDA.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_holiday_forecast.png}{Dự báo ngày 4/7/2018.}
-\caption{Quốc khánh Mỹ, 4/7/2018: MAE của mô hình là 235 xe/giờ so với 1,957 của dự báo seasonal naive.}
+\caption{Quốc khánh Mỹ, 4/7/2018: MAE của mô hình là 251 xe/giờ so với 1957 của dự báo seasonal naive.}
 \label{fig:ts-holiday-forecast}
 \end{figure}
 
 \subsection{Phân tích lỗi và tầm quan trọng của đặc trưng}
-Phần dư không bị lệch (trung bình $-3$ xe/giờ) và đối xứng với đuôi dày (Hình~\ref{fig:ts-residuals}).
+Phần dư không bị lệch (trung bình $-2$ xe/giờ) và đối xứng với đuôi dày (Hình~\ref{fig:ts-residuals}).
 MAE thấp nhất vào ban đêm (dưới 50 lúc 1--4h) và cao nhất lúc \textbf{23h ($\approx$ 230)} và ở \textbf{đỉnh sáng 7h
 ($\approx$ 200)}: lúc lưu lượng tăng vọt buổi sáng và lúc tối muộn là khi một giờ lịch sử cho biết ít nhất về giờ tiếp theo.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{timeseries/ts_residuals.png}{Phân phối phần dư và MAE theo giờ.}
-\caption{Phần dư trên test: trung bình $-3$ xe/giờ (không lệch); MAE lớn nhất lúc 23h và ở đỉnh sáng 7h.}
+\caption{Phần dư trên test: trung bình $-2$ xe/giờ (không lệch); MAE lớn nhất lúc 23h và ở đỉnh sáng 7h.}
 \label{fig:ts-residuals}
 \end{figure}
 
-Permutation importance trên tập test xác nhận kết quả EDA (Hình~\ref{fig:ts-importance}): xáo trộn $y_{t-1}$ làm MAE tăng khoảng
-1,300, tiếp theo là \texttt{hour\_cos} ($\approx$ 390) và $y_{t-168}$ ($\approx$ 150), tức trí nhớ ngắn hạn, chu kỳ ngày và
+Permutation importance được tính trên tập test \emph{sau khi} đã chọn mô hình và không dùng để thay đổi gì;
+nó chỉ mô tả mô hình cuối cùng. Kết quả xác nhận EDA (Hình~\ref{fig:ts-importance}): xáo trộn $y_{t-1}$ làm MAE tăng khoảng
+900, tiếp theo là \texttt{hour\_cos} ($\approx$ 540) và $y_{t-168}$ ($\approx$ 220), tức trí nhớ ngắn hạn, chu kỳ ngày và
 chu kỳ tuần. Các đặc trưng thời tiết và ngày lễ gần như không đóng góp \emph{trên giai đoạn test này}: không có tuyết và chỉ có
 ba ngày lễ, nên giá trị của chúng không thể hiện ra, dù EDA cho thấy chúng quan trọng vào mùa đông và ngày lễ.
 
@@ -491,31 +502,31 @@ ba ngày lễ, nên giá trị của chúng không thể hiện ra, dù EDA cho 
 \label{fig:ts-importance}
 \end{figure}
 
-\textbf{Các sai số lớn nhất.} 60\% trong 50 sai số lớn nhất trên test rơi vào các giờ bị bộ phát hiện robust đánh dấu ngoại lai,
-dù các giờ này chỉ chiếm 3.1\% giai đoạn test. Vậy những lần dự báo sai nặng nhất là do \textbf{sự kiện bất thường},
-không phải lỗi có hệ thống. Lớn nhất là ngày 21/5/2018 lúc 13h: lưu lượng tụt đột ngột còn 2,040 xe (nhiều khả năng do sự cố)
+\textbf{Các sai số lớn nhất.} 66\% trong 50 sai số lớn nhất trên test rơi vào các giờ bị bộ phát hiện robust đánh dấu ngoại lai,
+dù các giờ này chỉ chiếm 3.1\% giai đoạn test. Vậy những lần dự báo sai nặng nhất rơi vào \textbf{sự kiện bất thường}. Đây là mô tả, không phải bằng chứng độc lập:
+\texttt{is\_outlier} đánh dấu các giờ lệch xa mức thường lệ bằng cửa sổ đặt giữa, nên sai số lớn ở các giờ này phần nào là hiển nhiên. Lớn nhất là ngày 21/5/2018 lúc 13h: lưu lượng tụt đột ngột còn 2040 xe (nhiều khả năng do sự cố)
 mà mô hình chỉ ``thấy'' sau một giờ, nên sai hai lần: lúc tụt và lúc hồi lại. Nhiều sai số khác là các buổi tối muộn tháng 9/2018
-với 2,700--3,900 xe lúc 23h thay vì khoảng 1,300 như thường lệ; dữ liệu không cho biết nguyên nhân.
+với 2700--3900 xe lúc 23h thay vì khoảng 1300 như thường lệ; dữ liệu không cho biết nguyên nhân.
 Một mô hình dự báo trước một giờ không thể lường trước các trường hợp này nếu không có dữ liệu sự cố hoặc sự kiện.
 
-\textbf{Dự báo trên dữ liệu mới.} Sau khi fit lại trên toàn bộ 23,928 giờ dùng được, mô hình dự báo \textbf{571 xe} cho
+\textbf{Dự báo trên dữ liệu mới.} Sau khi fit lại trên toàn bộ 22\,969 giờ dùng được, mô hình dự báo \textbf{567 xe} cho
 0h thứ Hai 01/10/2018, tiếp nối đà giảm của đêm Chủ nhật (954 xe lúc 23h). Mọi đầu vào của dòng này đều biết được tại thời điểm
 dự báo: lag và thời tiết lấy từ 23h Chủ nhật trở về trước, còn lịch và cờ ngày lễ biết trước.
 
 \section{Kết luận}
 \begin{enumerate}[leftmargin=1.5cm]
     \item \textbf{Hai chu kỳ lồng nhau chi phối chuỗi.} MSTL quy 79\% phương sai cho chu kỳ ngày và 15\% cho chu kỳ tuần,
-          so với 1\% cho xu hướng; giờ đông nhất gấp 15 lần giờ vắng nhất, còn tháng đông nhất chỉ hơn tháng vắng nhất 12\%.
+          so với 1\% cho xu hướng; giờ đông nhất gấp 15 lần giờ vắng nhất, còn tháng đông nhất chỉ hơn tháng vắng nhất 13\%.
     \item \textbf{Giá trị quá khứ nhiều thông tin nhất là cùng giờ tuần trước} (ACF 0.94 ở lag 168) và giờ liền trước (0.91);
           đây cũng là các đặc trưng quan trọng nhất của mô hình cuối cùng.
-    \item \textbf{Các ngày lễ không giống nhau}: trung bình $-28\%$, từ $-49\%$ (Năm mới) đến $+5\%$ (State Fair).
-          Nhờ các cờ ngày lễ, mô hình chỉ sai 235 xe/giờ vào Quốc khánh 2018 thay vì 1,957.
-    \item \textbf{Thời tiết chỉ quan trọng khi cực đoan}: tuyết $-10.6\%$ và tuyết lớn $-43\%$ so với cùng thứ-cùng giờ,
-          mọi loại thời tiết khác trong khoảng $\pm 3\%$.
+    \item \textbf{Các ngày lễ không giống nhau}: trung bình $-26\%$, từ $-49\%$ (Lễ Tạ ơn) đến $+5\%$ (State Fair).
+          Danh sách ngày lễ lớn được chọn chỉ trên train; vào Quốc khánh 2018 (chưa thấy), mô hình chỉ sai 251 xe/giờ thay vì 1957.
+    \item \textbf{Thời tiết chỉ quan trọng khi cực đoan}: tuyết trung bình $-6.9\%$ và tuyết mức vừa $-21\%$ so với cùng thứ-cùng giờ,
+          mọi loại thời tiết khác trong khoảng $\pm 4\%$.
     \item \textbf{Cần thống kê robust để phát hiện bất thường}: rolling median/MAD bắt được 14/14 giờ đóng đường,
-          rolling mean/std không bắt được giờ nào do hiệu ứng che lấp; các giờ bị đánh dấu chiếm 60\% các sai số lớn nhất trên test.
+          rolling mean/std không bắt được giờ nào do hiệu ứng che lấp; các giờ bị đánh dấu chiếm 66\% các sai số lớn nhất trên test.
     \item \textbf{Mô hình cây thắng, ARIMA là mốc tham chiếu vững}: HistGradientBoosting đã tinh chỉnh giảm 77\% MAE so với naive
-          trên test (MAE 131.5); SARIMAX với số hạng Fourier theo tuần và sai số AR(3) đạt MAE validation 199, vượt Ridge và mọi baseline.
+          trên test (MAE 131.2); SARIMAX với số hạng Fourier theo tuần và sai số AR(3) đạt MAE validation 208, vượt Ridge và mọi baseline.
 \end{enumerate}
 
 \section{Hạn chế và hướng phát triển}
@@ -523,7 +534,8 @@ dự báo: lag và thời tiết lấy từ 23h Chủ nhật trở về trước
     \item \textbf{Dữ liệu:} chỉ một trạm đếm và một chiều đi (hướng tây); không có thông tin về sự cố, công trình hay sự kiện,
           vốn là nguyên nhân của các sai số lớn nhất. Nhãn ngày lễ chỉ lấy từ chính tập dữ liệu.
     \item \textbf{Phương pháp:} chỉ dự báo trước một giờ; thời tiết là thời tiết quan sát một giờ trước, không phải dự báo thời tiết.
-          Các giờ được nội suy (4.2\%, phần lớn trong train) vẫn được dùng để huấn luyện.
+          Các giờ thiếu (4.2\%, phần lớn trong train) được điền bằng forward fill và chỉ dùng làm lag; giá trị điền
+          phẳng nên không bắt được đà tăng hoặc giảm của giờ cao điểm.
     \item \textbf{Đánh giá:} chỉ một lần chia theo thời gian; giai đoạn test (hè 2018) không có tuyết và chỉ có ba ngày lễ,
           nên hành vi mùa đông chỉ được đo trên validation. SARIMAX chỉ được so sánh trên validation vì tập test dành riêng cho
           mô hình được chọn.
