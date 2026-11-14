@@ -2,7 +2,10 @@
 \label{chap:tabular}
 % Chương Tabular, phụ trách: Trần Lê Hoàng Long
 % Số liệu lấy từ notebooks/tabular.ipynb (lần chạy cuối trên Colab); hình xuất từ cùng lần chạy
+% Cách viết số theo chuẩn chung của nhóm: dấu chấm thập phân, khoảng trắng hẹp (\,) tách hàng nghìn từ 5 chữ số
 \sloppy % tên cột dài trong \texttt không ngắt dòng được; \fussy ở cuối chương trả lại mặc định
+
+Trong chương này, số thập phân dùng dấu chấm; hàng nghìn tách bằng khoảng trắng.
 
 \section{Bài toán và mục tiêu}
 Khi khách hủy phòng sát ngày đến, khách sạn thường không kịp bán lại phòng đó. Nếu biết trước booking nào dễ bị hủy,
@@ -20,11 +23,11 @@ accuracy chỉ để tham khảo. Mô hình được chọn chỉ được đán
     \item Nguồn: \url{https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11};
           notebook tải trực tiếp file \texttt{hotels.csv} nên không cần API key.
     \item Thu thập: trích từ hệ thống quản lý khách sạn (PMS) của hai khách sạn ở Bồ Đào Nha, một resort ở vùng Algarve
-          (H1, 40.060 booking) và một khách sạn trong thành phố Lisbon (H2, 79.330 booking), gồm mọi booking có ngày đến
+          (H1, 40\,060 booking) và một khách sạn trong thành phố Lisbon (H2, 79\,330 booking), gồm mọi booking có ngày đến
           từ tháng 7/2015 đến tháng 8/2017, kể cả booking đã hủy. Thông tin nhận dạng khách hàng đã bị xóa.
-    \item Kích thước: 119.390 dòng, 32 cột; mỗi dòng là một booking.
-    \item Biến mục tiêu: \texttt{is\_canceled}, 37,0\% booking bị hủy trên dữ liệu gốc.
-    \item Giá trị thiếu: 129.425 ô, nằm ở \texttt{company} (94,3\%), \texttt{agent} (13,7\%), \texttt{country} (0,4\%)
+    \item Kích thước: 119\,390 dòng, 32 cột; mỗi dòng là một booking.
+    \item Biến mục tiêu: \texttt{is\_canceled}, 37.0\% booking bị hủy trên dữ liệu gốc.
+    \item Giá trị thiếu: 129\,425 ô, nằm ở \texttt{company} (94.3\%), \texttt{agent} (13.7\%), \texttt{country} (0.4\%)
           và \texttt{children} (4 ô).
     \item Giấy phép và trích dẫn: CC BY 4.0. N. António, A. de Almeida, L. Nunes, \textit{Hotel booking demand datasets},
           Data in Brief 22 (2019) 41--49.
@@ -35,9 +38,14 @@ Bốn cột chỉ có sau khi đặt nên bị loại: \texttt{reservation\_stat
 và ngày ghi kết quả), \texttt{assigned\_room\_type} (loại phòng thực nhận lúc check-in) và \texttt{booking\_changes}
 (số lần sửa booking cho đến lúc check-in hoặc hủy). \texttt{arrival\_date\_year} cũng bị loại vì chỉ gồm các năm 2015--2017,
 không dùng được cho năm sau. Còn lại 26 đặc trưng gồm 15 cột số và 11 cột phân loại; \texttt{agent} và \texttt{company}
-lưu dưới dạng số nhưng là mã ID của đại lý và công ty, nên được xếp vào nhóm phân loại.
+lưu dưới dạng số nhưng là mã ID của đại lý và công ty, nên được xếp vào nhóm phân loại. Hai cột \texttt{country} và
+\texttt{required\_car\_parking\_spaces} được giữ lại nhưng có dấu hiệu chỉ được ghi đầy đủ lúc check-in; mục~\ref{sec:tab-suspect}
+đo ảnh hưởng của chúng.
 
 \section{Kiểm tra chất lượng dữ liệu}
+Phần kiểm tra chất lượng và EDA chạy trên toàn bộ dữ liệu vì chỉ để mô tả. Các lựa chọn xử lý rút ra từ đây đều được kiểm chứng lại
+trên tập validation, còn mọi thống kê mà mô hình dùng (median, danh sách giá trị cho one-hot) chỉ được học trên tập train.
+
 \begin{table}[H]
 \centering
 \caption{Các vấn đề chất lượng dữ liệu và cách xử lý}
@@ -46,48 +54,49 @@ lưu dưới dạng số nhưng là mã ID của đại lý và công ty, nên �
 \toprule
 Vấn đề & Quy mô & Cách xử lý\\
 \midrule
-Thiếu \texttt{company}, \texttt{agent} & 94,3\% và 13,7\% số dòng & Giữ thành một giá trị riêng \texttt{"missing"}, thêm hai cột cờ \texttt{has\_company}, \texttt{has\_agent}\\
+Thiếu \texttt{company}, \texttt{agent} & 94.3\% và 13.7\% số dòng & Giữ thành một giá trị riêng \texttt{"missing"}, thêm hai cột cờ \texttt{has\_company}, \texttt{has\_agent}\\
 Thiếu \texttt{country}, \texttt{children} & 488 và 4 ô & Cùng cách trên; riêng \texttt{children} điền bằng median của tập train\\
-Dòng trùng hoàn toàn & 31.994 dòng (26,8\%); 34.050 dòng khi bỏ các cột bị loại & Bỏ trước khi chia tập\\
-\texttt{adr} âm hoặc quá lớn & 1 dòng $-6{,}38$, 1 dòng 5.400 & Bỏ (khoảng hợp lệ 0--1.000)\\
+Dòng trùng hoàn toàn & 31\,994 dòng (26.8\%); 34\,050 dòng khi bỏ các cột bị loại & Bỏ trước khi chia tập\\
+\texttt{adr} âm hoặc quá lớn & 1 dòng $-6.38$, 1 dòng 5400 & Bỏ (khoảng hợp lệ 0--1000)\\
 Booking không có khách & 180 dòng & Bỏ bằng quy tắc trên nhiều cột\\
-\texttt{meal = Undefined} & 1.169 dòng & Gộp với \texttt{SC} (không có gói ăn)\\
+\texttt{meal = Undefined} & 1169 dòng & Gộp với \texttt{SC} (không có gói ăn)\\
 Đuôi phải dài (\texttt{lead\_time}, \texttt{adr}, số đêm) & tới 737 ngày, 50 đêm & Giữ nguyên; dùng \texttt{log1p} và \texttt{RobustScaler}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Giá trị thiếu.} Việc thiếu dữ liệu ở đây không xảy ra ngẫu nhiên. Booking không có \texttt{company} bị hủy 38,2\%,
-trong khi booking có \texttt{company} chỉ hủy 17,5\%. Với \texttt{agent} thì ngược lại: không qua đại lý hủy 24,7\%, có đại lý hủy 39,0\%.
+\textbf{Giá trị thiếu.} Việc thiếu dữ liệu ở đây không xảy ra ngẫu nhiên. Booking không có \texttt{company} bị hủy 38.2\%,
+trong khi booking có \texttt{company} chỉ hủy 17.5\%. Với \texttt{agent} thì ngược lại: không qua đại lý hủy 24.7\%, có đại lý hủy 39.0\%.
 Ô trống ở \texttt{agent} hay \texttt{company} thực chất có nghĩa là booking không đặt qua đại lý hoặc công ty nào,
 nên các ô này được giữ lại như một loại thông tin thay vì điền bằng giá trị khác.
 
 \textbf{Dòng trùng.} Dataset không có mã booking, nên khi một đoàn đặt nhiều phòng giống nhau thì các phòng đó trở thành
-nhiều dòng giống hệt nhau. Các bản sao khác hẳn phần còn lại: 63,1\% bị hủy (so với 27,5\%), 42,3\% là Non Refund (so với 1,2\%)
-và 46,5\% thuộc phân khúc Groups (so với 5,7\%). Có tới 13.549 trong 14.587 booking Non Refund là bản sao.
+nhiều dòng giống hệt nhau. Các bản sao khác hẳn phần còn lại: 63.1\% bị hủy (so với 27.5\%), 42.3\% là Non Refund (so với 1.2\%)
+và 46.5\% thuộc phân khúc Groups (so với 5.7\%). Có tới 13\,549 trong 14\,587 booking Non Refund là bản sao.
 Nếu giữ lại, cùng một booking có thể nằm ở cả tập train và tập test, làm kết quả đánh giá cao hơn thực tế, nên các dòng trùng bị bỏ.
-Sau khi làm sạch còn 85.175 booking và tỷ lệ hủy giảm từ 37,0\% xuống 27,7\%.
+Sau khi làm sạch còn 85\,175 booking và tỷ lệ hủy giảm từ 37.0\% xuống 27.7\%.
 
 \textbf{Outlier.} Quy tắc IQR không phù hợp với các cột đếm. Ví dụ ở \texttt{adults}, $Q_1 = Q_3 = 2$ nên mọi booking
-không phải 2 người lớn đều bị coi là outlier (24,9\% số dòng). Các giá trị lớn còn lại như booking đoàn 55 người lớn
+không phải 2 người lớn đều bị coi là outlier (24.9\% số dòng). Các giá trị lớn còn lại như booking đoàn 55 người lớn
 hay booking ở hơn 30 đêm vẫn có thể xảy ra, nên được giữ nguyên.
 
 \section{Phân tích khám phá (EDA)}
-Một số quy luật đã thấy rõ trước khi xây dựng mô hình. Trong 7.416 booking có yêu cầu chỗ đỗ xe, không có booking nào bị hủy.
-Khách Bồ Đào Nha hủy 56,6\% số booking, gấp khoảng ba lần khách Đức, Pháp và Anh (16,7--20,2\%),
-và City Hotel có tỷ lệ hủy cao hơn Resort Hotel (41,7\% so với 27,8\%).
+Một số quy luật đã thấy rõ trước khi xây dựng mô hình. Khách Bồ Đào Nha hủy 56.6\% số booking, gấp khoảng ba lần khách Đức,
+Pháp và Anh (16.7--20.2\%), và City Hotel có tỷ lệ hủy cao hơn Resort Hotel (41.7\% so với 27.8\%).
+Trong 7416 booking có yêu cầu chỗ đỗ xe, không có booking nào bị hủy. Một đặc trưng tách hai lớp tuyệt đối như vậy là điều đáng ngờ:
+nhiều khả năng số chỗ đỗ xe chỉ được ghi khi khách đến nhận phòng, nên phát hiện này chưa chắc là một quy luật về hành vi của khách.
 Vì dòng trùng tập trung ở một số nhóm, ba câu hỏi dưới đây được tính trên cả toàn bộ dữ liệu và dữ liệu đã bỏ trùng,
 tức dữ liệu dùng để huấn luyện mô hình về sau.
 
 \subsection{Câu hỏi 1: Đặt phòng càng sớm thì càng dễ hủy?}
-Trên dữ liệu đã bỏ trùng, tỷ lệ hủy của City Hotel tăng từ 10,5\% với booking đặt trước tối đa 7 ngày lên 45,7\%
-với booking đặt trước 181--365 ngày. Resort Hotel có cùng xu hướng trong khoảng một năm (từ 6,0\% lên 35,2\%).
-Dòng trùng làm các nhóm đặt sớm bị phóng đại: nếu tính trên toàn bộ dữ liệu, nhóm 181--365 ngày ở City Hotel lên tới 62,7\%.
+Trên dữ liệu đã bỏ trùng, tỷ lệ hủy của City Hotel tăng từ 10.5\% với booking đặt trước tối đa 7 ngày lên 45.7\%
+với booking đặt trước 181--365 ngày. Resort Hotel có cùng xu hướng trong khoảng một năm (từ 6.0\% lên 35.2\%).
+Dòng trùng làm các nhóm đặt sớm bị phóng đại: nếu tính trên toàn bộ dữ liệu, nhóm 181--365 ngày ở City Hotel lên tới 62.7\%.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_q1_lead_time.png}{Tỷ lệ hủy theo thời gian đặt trước và khách sạn.}
-\caption{Tỷ lệ hủy tăng theo thời gian đặt trước: ở City Hotel là 10,5\% khi đặt trước tối đa 7 ngày và 45,7\% khi đặt trước 181--365 ngày (đường liền: dữ liệu đã bỏ trùng, đường chấm: toàn bộ dữ liệu).}
+\caption{Tỷ lệ hủy tăng theo thời gian đặt trước: ở City Hotel là 10.5\% khi đặt trước tối đa 7 ngày và 45.7\% khi đặt trước 181--365 ngày (đường liền: dữ liệu đã bỏ trùng, đường chấm: toàn bộ dữ liệu).}
 \label{fig:tab-q1}
 \end{figure}
 
@@ -95,9 +104,9 @@ Như vậy thời gian đặt trước liên hệ rõ với việc hủy phòng,
 Đây là lý do các mô hình dạng cây được kỳ vọng cho kết quả tốt hơn mô hình tuyến tính.
 
 \subsection{Câu hỏi 2: Vì sao booking Non Refund lại bị hủy nhiều nhất?}
-Thông thường khách đã trả tiền không hoàn lại sẽ ít hủy, nhưng trong dữ liệu booking Non Refund bị hủy 99,4\%.
-Sau khi bỏ trùng tỷ lệ này vẫn là 95,0\%, nhưng chỉ còn 992 booking. So với booking không đặt cọc, phần lớn là khách đoàn
-hoặc khách qua hãng lữ hành (62,8\% Groups và 28,2\% Offline TA/TO), gần như toàn bộ là khách Bồ Đào Nha (94,9\%),
+Thông thường khách đã trả tiền không hoàn lại sẽ ít hủy, nhưng trong dữ liệu booking Non Refund bị hủy 99.4\%.
+Sau khi bỏ trùng tỷ lệ này vẫn là 95.0\%, nhưng chỉ còn 992 booking. So với booking không đặt cọc, phần lớn là khách đoàn
+hoặc khách qua hãng lữ hành (62.8\% Groups và 28.2\% Offline TA/TO), gần như toàn bộ là khách Bồ Đào Nha (94.9\%),
 và đặt trước trung vị 192 ngày thay vì 47 ngày. Có thể đây là các công ty lữ hành giữ phòng từ sớm rồi trả lại khi không bán hết,
 khi đó điều khoản không hoàn tiền nằm trong hợp đồng với đại lý chứ không phải khách lẻ đã thanh toán.
 Dữ liệu không có cột nào xác nhận trực tiếp giả thuyết này.
@@ -105,20 +114,20 @@ Dữ liệu không có cột nào xác nhận trực tiếp giả thuyết này.
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_q2_non_refund.png}{Tỷ lệ hủy theo loại đặt cọc, toàn bộ dữ liệu và dữ liệu đã bỏ trùng.}
-\caption{Booking Non Refund vẫn bị hủy 95,0\% sau khi bỏ trùng, nhưng chỉ 992 trong 14.587 dòng Non Refund là không trùng.}
+\caption{Booking Non Refund vẫn bị hủy 95.0\% sau khi bỏ trùng, nhưng chỉ 992 trong 14\,587 dòng Non Refund là không trùng.}
 \label{fig:tab-q2}
 \end{figure}
 
 \subsection{Câu hỏi 3: Yêu cầu đặc biệt và khách quen có làm giảm hủy phòng?}
-Với khách mới, tỷ lệ hủy giảm từ 34,7\% khi không có yêu cầu đặc biệt nào xuống 23,2\% khi có một yêu cầu và 16,9\% khi có
-từ ba yêu cầu trở lên. Khách quen chỉ hủy 7,7\% so với 28,5\% ở khách mới, và hủy ít hơn ở mọi mức số yêu cầu.
-Dòng trùng chỉ ảnh hưởng tới nhóm không có yêu cầu đặc biệt (47,7\% trên toàn bộ dữ liệu so với 33,6\% sau khi bỏ trùng),
+Với khách mới, tỷ lệ hủy giảm từ 34.7\% khi không có yêu cầu đặc biệt nào xuống 23.2\% khi có một yêu cầu và 16.9\% khi có
+từ ba yêu cầu trở lên. Khách quen chỉ hủy 7.7\% so với 28.5\% ở khách mới, và hủy ít hơn ở mọi mức số yêu cầu.
+Dòng trùng chỉ ảnh hưởng tới nhóm không có yêu cầu đặc biệt (47.7\% trên toàn bộ dữ liệu so với 33.6\% sau khi bỏ trùng),
 cho thấy các bản sao hầu hết là booking không có yêu cầu nào.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_q3_requests.png}{Tỷ lệ hủy theo số yêu cầu đặc biệt và loại khách.}
-\caption{Chỉ một yêu cầu đặc biệt đã làm tỷ lệ hủy của khách mới giảm từ 34,7\% xuống 23,2\%; khách quen hủy 7,7\% so với 28,5\% ở khách mới.}
+\caption{Chỉ một yêu cầu đặc biệt đã làm tỷ lệ hủy của khách mới giảm từ 34.7\% xuống 23.2\%; khách quen hủy 7.7\% so với 28.5\% ở khách mới.}
 \label{fig:tab-q3}
 \end{figure}
 
@@ -138,9 +147,9 @@ thông tin của các dòng khác. Các thống kê như median để điền gi
 \toprule
 Tập & Số dòng & Tỷ lệ hủy\\
 \midrule
-Train & 59.622 & 27,7\%\\
-Validation & 12.776 & 27,7\%\\
-Test & 12.777 & 27,7\%\\
+Train & 59\,622 & 27.7\%\\
+Validation & 12\,776 & 27.7\%\\
+Test & 12\,777 & 27.7\%\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -162,23 +171,23 @@ Bốn cách được so sánh trên tập validation, cùng dùng mô hình Logi
 \toprule
 Cách xử lý & Số dòng train & F1 & PR-AUC & ROC-AUC\\
 \midrule
-(a) Bỏ các dòng bị thiếu & 122 & 0,184 & 0,289 & 0,524\\
-(b) Bỏ cột \texttt{company}, điền median/mode & 59.622 & 0,645 & 0,655 & 0,846\\
-(c) Coi giá trị thiếu là một nhóm + cột cờ & 59.622 & 0,647 & 0,654 & 0,849\\
-(d) KNNImputer + nhóm riêng & 59.622 & 0,647 & 0,654 & 0,849\\
+(a) Bỏ các dòng bị thiếu & 122 & 0.184 & 0.290 & 0.524\\
+(b) Bỏ cột \texttt{company}, điền median/mode & 59\,622 & 0.645 & 0.655 & 0.846\\
+(c) Coi giá trị thiếu là một nhóm + cột cờ & 59\,622 & 0.648 & 0.654 & 0.849\\
+(d) KNNImputer + nhóm riêng & 59\,622 & 0.648 & 0.654 & 0.849\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Cách bỏ dòng gần như không dùng được: hầu hết các dòng đều thiếu \texttt{company} nên chỉ còn 122 dòng để huấn luyện,
-và PR-AUC chỉ bằng 0,289, sát với tỷ lệ hủy. Ba cách còn lại cho kết quả gần như nhau. Cách (c) được chọn vì không phải bỏ cột nào
+và PR-AUC chỉ bằng 0.290, sát với tỷ lệ hủy. Ba cách còn lại cho kết quả gần như nhau. Cách (c) được chọn vì không phải bỏ cột nào
 và giữ được ý nghĩa của ô trống là booking không qua đại lý hay công ty. KNN cho kết quả trùng với (c) vì trong các cột số
 chỉ có 4 ô bị thiếu.
 
 \subsection{Xử lý outlier}
 Ba cách xử lý các cột liên tục có đuôi dài được so sánh trên cùng mô hình: giữ nguyên, lấy \texttt{log1p}, và cắt tại phân vị 1\% và 99\%
-của tập train. \texttt{log1p} làm PR-AUC tăng từ 0,654 lên 0,674 và F1 từ 0,647 lên 0,667, còn cắt ngưỡng gần như không thay đổi gì
-(PR-AUC 0,654) vì chỉ 0,3--1\% số dòng bị cắt. Do đó \texttt{log1p} được giữ lại. Cách này chủ yếu giúp mô hình tuyến tính,
+của tập train. \texttt{log1p} làm PR-AUC tăng từ 0.654 lên 0.674 và F1 từ 0.648 lên 0.667, còn cắt ngưỡng gần như không thay đổi gì
+(PR-AUC 0.654) vì chỉ 0.3--1\% số dòng bị cắt. Do đó \texttt{log1p} được giữ lại. Cách này chủ yếu giúp mô hình tuyến tính,
 vì mô hình cây chỉ dựa vào thứ tự giá trị.
 
 \section{Mô hình và thiết lập thí nghiệm}
@@ -195,18 +204,18 @@ siêu tham số bằng \texttt{RandomizedSearchCV} (10 tổ hợp, cross-validat
 \toprule
 Mô hình & Precision & Recall & F1 & PR-AUC & Accuracy\\
 \midrule
-Baseline (lớp đa số) & 0,000 & 0,000 & 0,000 & 0,277 & 0,723\\
-Logistic Regression & 0,679 & 0,531 & 0,596 & 0,683 & 0,801\\
-Logistic Regression (balanced) & 0,562 & 0,822 & 0,667 & 0,674 & 0,773\\
-Decision Tree & 0,719 & 0,576 & 0,640 & 0,701 & 0,820\\
-Random Forest & 0,741 & 0,648 & 0,692 & 0,775 & 0,840\\
-HistGradientBoosting & 0,733 & 0,637 & 0,682 & \textbf{0,779} & 0,835\\
-HistGradientBoosting (balanced) & 0,602 & 0,856 & 0,707 & 0,775 & 0,803\\
+Baseline (lớp đa số) & 0.000 & 0.000 & 0.000 & 0.277 & 0.723\\
+Logistic Regression & 0.679 & 0.532 & 0.597 & 0.683 & 0.801\\
+Logistic Regression (balanced) & 0.562 & 0.822 & 0.667 & 0.674 & 0.773\\
+Decision Tree & 0.719 & 0.576 & 0.640 & 0.701 & 0.820\\
+Random Forest & 0.741 & 0.648 & 0.692 & 0.775 & 0.840\\
+HistGradientBoosting & 0.733 & 0.637 & 0.682 & \textbf{0.779} & 0.835\\
+HistGradientBoosting (balanced) & 0.602 & 0.856 & 0.707 & 0.775 & 0.803\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Các mô hình dạng cây tốt hơn rõ rệt so với Logistic Regression (PR-AUC khoảng 0,78 so với 0,67--0,68), phù hợp với các quan hệ
+Các mô hình dạng cây tốt hơn rõ rệt so với Logistic Regression (PR-AUC khoảng 0.78 so với 0.67--0.68), phù hợp với các quan hệ
 phi tuyến thấy ở phần EDA. HistGradientBoosting có PR-AUC cao nhất và huấn luyện nhanh hơn Random Forest nhiều,
 nên được dùng cho các bước tiếp theo. Phiên bản balanced gần như không làm thay đổi PR-AUC mà chủ yếu đổi giữa precision và recall.
 
@@ -216,11 +225,11 @@ nên được dùng cho các bước tiếp theo. Phiên bản balanced gần nh
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_leakage.png}{Kết quả validation khi có và không có các cột rò rỉ.}
-\caption{Thêm thông tin lúc check-in làm PR-AUC tăng từ 0,779 lên 0,793, còn thêm \texttt{reservation\_status} cho kết quả tuyệt đối 1,000 nhưng không có ý nghĩa.}
+\caption{Thêm thông tin lúc check-in làm PR-AUC tăng từ 0.779 lên 0.793, còn thêm \texttt{reservation\_status} cho kết quả tuyệt đối 1.000 nhưng không có ý nghĩa.}
 \label{fig:tab-leakage}
 \end{figure}
 
-Khi có \texttt{reservation\_status}, mọi chỉ số đều bằng 1,000 vì cột này chính là kết quả cần dự đoán. Trường hợp thêm
+Khi có \texttt{reservation\_status}, mọi chỉ số đều bằng 1.000 vì cột này chính là kết quả cần dự đoán. Trường hợp thêm
 \texttt{assigned\_room\_type} và \texttt{booking\_changes} khó nhận ra hơn: PR-AUC chỉ tăng nhẹ, rất dễ bị hiểu nhầm là mô hình
 được cải thiện, nhưng tại thời điểm dự đoán thì hai cột này chưa tồn tại.
 
@@ -233,23 +242,55 @@ Khi có \texttt{reservation\_status}, mọi chỉ số đều bằng 1,000 vì c
 \toprule
 Cách xử lý & Precision & Recall & F1 & PR-AUC\\
 \midrule
-Không xử lý & 0,733 & 0,637 & 0,682 & 0,779\\
-\texttt{class\_weight="balanced"} & 0,602 & 0,856 & 0,707 & 0,775\\
-SMOTE (chỉ trên tập train) & 0,688 & 0,712 & 0,700 & 0,770\\
-Điều chỉnh ngưỡng (0,374) & 0,666 & 0,770 & 0,715 & 0,779\\
+Không xử lý & 0.733 & 0.637 & 0.682 & 0.779\\
+\texttt{class\_weight="balanced"} & 0.602 & 0.856 & 0.707 & 0.775\\
+SMOTE (chỉ trên tập train) & 0.688 & 0.712 & 0.700 & 0.770\\
+Điều chỉnh ngưỡng (0.374) & 0.666 & 0.770 & 0.715 & 0.779\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 Cả ba cách đều làm tăng recall của lớp hủy. Điều chỉnh ngưỡng bằng cross-validation trên tập train cho F1 cao nhất và giữ nguyên PR-AUC,
-vì mô hình không đổi mà chỉ đổi ngưỡng phân loại. \texttt{class\_weight} cho recall cao nhất nhưng precision giảm còn 0,602.
+vì mô hình không đổi mà chỉ đổi ngưỡng phân loại. \texttt{class\_weight} cho recall cao nhất nhưng precision giảm còn 0.602.
 SMOTE có PR-AUC thấp nhất, có thể do việc nội suy trên cả các cột one-hot tạo ra những booking không có thật,
 chẳng hạn một booking nửa thuộc City Hotel nửa thuộc Resort Hotel.
 
+\subsection{Hai cột có thể chỉ được ghi đầy đủ lúc check-in}
+\label{sec:tab-suspect}
+Hai cột còn lại trong tập đặc trưng có dấu hiệu bất thường. Sau khi làm sạch, 7268 booking có yêu cầu chỗ đỗ xe và không booking nào bị hủy.
+Với \texttt{country}, booking bị thiếu chỉ hủy 6.3\% (445 booking), khách Bồ Đào Nha (PRT) hủy 35.8\% và khách các nước khác hủy 24.1\%.
+Nếu booking hủy hay bị bỏ trống quốc gia thì nhóm thiếu phải hủy nhiều nhất, nhưng ở đây lại hủy ít nhất. Mẫu này khớp hơn với
+giả thuyết quốc gia được ghi tạm là PRT lúc đặt và chỉ được sửa lại khi khách check-in. Dữ liệu không có thời điểm ghi của từng cột
+nên không kiểm chứng trực tiếp được; thay vào đó, mô hình đã tinh chỉnh được huấn luyện lại sau khi bỏ lần lượt từng cột
+để đo mức phụ thuộc của nó vào các cột này (Bảng~\ref{tab:tab-suspect}).
+
+\begin{table}[H]
+\centering
+\caption{Mô hình đã tinh chỉnh khi bỏ từng cột nghi ngờ (validation, chưa áp ngưỡng)}
+\label{tab:tab-suspect}
+\begin{tabular}{lrr}
+\toprule
+Cột bị bỏ & PR-AUC & ROC-AUC\\
+\midrule
+Không bỏ cột nào & 0.783 & 0.905\\
+\texttt{country} & 0.721 & 0.854\\
+\texttt{required\_car\_parking\_spaces} & 0.757 & 0.889\\
+\texttt{total\_of\_special\_requests} & 0.726 & 0.879\\
+\texttt{days\_in\_waiting\_list} & 0.782 & 0.904\\
+\texttt{country} và \texttt{required\_car\_parking\_spaces} & 0.696 & 0.833\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Bỏ cả hai cột nghi ngờ làm PR-AUC giảm từ 0.783 xuống 0.696. \texttt{total\_of\_special\_requests} cũng quan trọng, nhưng tỷ lệ hủy
+giảm dần theo số yêu cầu chứ không về hẳn 0, nên ít đáng ngờ hơn; \texttt{days\_in\_waiting\_list} gần như không ảnh hưởng.
+Vì dữ liệu không đủ để khẳng định có rò rỉ, mô hình cuối vẫn giữ hai cột này, nhưng kết quả khi bỏ chúng được báo cáo thêm
+ở mục~\ref{sec:tab-robust}.
+
 \section{Kết quả và đánh giá}
-Mô hình cuối là HistGradientBoosting đã tinh chỉnh (learning rate 0,1, 200 vòng lặp, 31 lá, tối thiểu 100 mẫu mỗi lá,
-L2 regularization 1,0) với ngưỡng phân loại 0,364, được chọn lại bằng cross-validation trên tập train.
-Mô hình được huấn luyện lại trên train và validation (72.398 dòng) rồi đánh giá một lần trên tập test.
+Mô hình cuối là HistGradientBoosting đã tinh chỉnh (learning rate 0.1, 200 vòng lặp, 31 lá, tối thiểu 100 mẫu mỗi lá,
+L2 regularization 1.0) với ngưỡng phân loại 0.364, được chọn lại bằng cross-validation trên tập train.
+Mô hình được huấn luyện lại trên train và validation (72\,398 dòng) rồi đánh giá một lần trên tập test.
 
 \begin{table}[H]
 \centering
@@ -260,28 +301,30 @@ Mô hình được huấn luyện lại trên train và validation (72.398 dòng
 \toprule
 Mô hình & Tập & Precision & Recall & F1 & PR-AUC & ROC-AUC & Accuracy\\
 \midrule
-Baseline & test & 0,000 & 0,000 & 0,000 & 0,277 & 0,500 & 0,723\\
-HGB tinh chỉnh + ngưỡng & validation & 0,660 & 0,782 & 0,715 & 0,783 & 0,905 & 0,828\\
-\textbf{HGB tinh chỉnh + ngưỡng} & \textbf{test} & \textbf{0,649} & \textbf{0,775} & \textbf{0,707} & \textbf{0,775} & \textbf{0,900} & \textbf{0,822}\\
+Baseline & test & 0.000 & 0.000 & 0.000 & 0.277 & 0.500 & 0.723\\
+HGB tinh chỉnh + ngưỡng & validation & 0.660 & 0.782 & 0.715 & 0.783 & 0.905 & 0.828\\
+\textbf{HGB tinh chỉnh + ngưỡng} & \textbf{test} & \textbf{0.649} & \textbf{0.775} & \textbf{0.707} & \textbf{0.775} & \textbf{0.900} & \textbf{0.822}\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Kết quả trên tập test chỉ thấp hơn validation tối đa 0,011, nên mô hình không bị overfit lên tập validation (Bảng~\ref{tab:tab-results}).
-So với baseline, PR-AUC tăng từ 0,277 lên 0,775 và F1 từ 0 lên 0,707, trong khi accuracy chỉ tăng từ 72,3\% lên 82,2\%.
-Trong 3.537 booking bị hủy ở tập test, mô hình phát hiện được 2.741 booking (77,5\%); đổi lại có 1.481 trong 9.240 booking
-không hủy (16,0\%) bị cảnh báo nhầm (Hình~\ref{fig:tab-confusion}).
+Kết quả trên tập test chỉ thấp hơn validation tối đa 0.011, nên mô hình không bị overfit lên tập validation (Bảng~\ref{tab:tab-results}).
+So với baseline, PR-AUC tăng từ 0.277 lên 0.775 và F1 từ 0 lên 0.707, trong khi accuracy chỉ tăng từ 72.3\% lên 82.2\%.
+Trong 3537 booking bị hủy ở tập test, mô hình phát hiện được 2741 booking (77.5\%); đổi lại có 1481 trong 9240 booking
+không hủy (16.0\%) bị cảnh báo nhầm (Hình~\ref{fig:tab-confusion}).
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_confusion.png}{Confusion matrix trên tập test.}
-\caption{Trên tập test, mô hình phát hiện 77,5\% số booking bị hủy và cảnh báo nhầm 16,0\% số booking không hủy.}
+\caption{Trên tập test, mô hình phát hiện 77.5\% số booking bị hủy và cảnh báo nhầm 16.0\% số booking không hủy.}
 \label{fig:tab-confusion}
 \end{figure}
 
-Permutation importance trên tập test phù hợp với phần EDA (Hình~\ref{fig:tab-importance}). Xáo trộn \texttt{country} làm PR-AUC giảm 0,162,
-tiếp theo là \texttt{lead\_time} (0,127), \texttt{agent} (0,115), \texttt{total\_of\_special\_requests} (0,108) và
-\texttt{market\_segment} (0,082). \texttt{deposit\_type} chỉ đứng thứ chín (0,042) vì sau khi bỏ trùng chỉ còn rất ít booking Non Refund.
+Permutation importance trên tập test phù hợp với phần EDA (Hình~\ref{fig:tab-importance}). Xáo trộn \texttt{country} làm PR-AUC giảm 0.162,
+tiếp theo là \texttt{lead\_time} (0.127), \texttt{agent} (0.115), \texttt{total\_of\_special\_requests} (0.108) và
+\texttt{market\_segment} (0.082). \texttt{required\_car\_parking\_spaces} đứng thứ sáu (0.078), nên cả hai cột nghi ngờ ở
+mục~\ref{sec:tab-suspect} đều nằm trong nhóm quan trọng nhất. \texttt{deposit\_type} chỉ đứng thứ chín (0.042) vì sau khi bỏ trùng
+chỉ còn rất ít booking Non Refund.
 
 \begin{figure}[H]
 \centering
@@ -291,9 +334,51 @@ tiếp theo là \texttt{lead\_time} (0,127), \texttt{agent} (0,115), \texttt{tot
 \end{figure}
 
 \textbf{Phân tích lỗi.} 796 booking hủy bị bỏ sót có đặc điểm giống các booking ít khả năng hủy: trung vị thời gian đặt trước
-chỉ 35 ngày (so với 94 ngày ở các booking hủy được phát hiện) và 66,3\% có yêu cầu đặc biệt (so với 32,0\%).
+chỉ 35 ngày (so với 94 ngày ở các booking hủy được phát hiện) và 66.3\% có yêu cầu đặc biệt (so với 32.0\%).
 Lý do hủy của các booking này, như thay đổi kế hoạch hay ốm đau, không có trong dữ liệu đặt phòng,
 nên đây là giới hạn của dữ liệu hơn là của mô hình.
+
+\subsection{Kết quả trên test có quá lạc quan không?}
+\label{sec:tab-robust}
+Ba thí nghiệm kiểm tra xem PR-AUC 0.775 có cao hơn mức đạt được khi dùng thật hay không. Thứ nhất, mô hình ``bảo thủ'' bỏ
+\texttt{country} và \texttt{required\_car\_parking\_spaces}, dùng cùng siêu tham số, chọn lại ngưỡng bằng cross-validation trên train
+(0.315) và được chấm trên cùng tập test. Thứ hai, dữ liệu được chia theo thời gian: học trên 54\,024 booking có ngày đến trước 01/01/2017
+và kiểm tra trên 31\,151 booking năm 2017, cùng mô hình và ngưỡng 0.364, so với một lần chia ngẫu nhiên có đúng cùng kích thước.
+Thứ ba, các dòng test có phòng cùng đoàn trong train hoặc validation (cùng khách sạn, ngày đến, thời gian đặt trước, số đêm, phân khúc,
+quốc gia, đại lý và công ty) được tách riêng để so sánh. Không lựa chọn nào ở các mục trước bị thay đổi theo kết quả ở đây.
+
+\begin{table}[H]
+\centering
+\caption{Mô hình trên phần test của từng cách đánh giá (lớp hủy)}
+\label{tab:tab-robust}
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrr}
+\toprule
+Cách đánh giá & Precision & Recall & F1 & PR-AUC & ROC-AUC\\
+\midrule
+Chia ngẫu nhiên 70/15/15, mô hình cuối & 0.649 & 0.775 & 0.707 & 0.775 & 0.900\\
+Như trên, bỏ hai cột nghi ngờ & 0.584 & 0.668 & 0.623 & 0.687 & 0.825\\
+Chia ngẫu nhiên, cùng kích thước với dòng dưới & 0.657 & 0.779 & 0.713 & 0.779 & 0.903\\
+Học trước 2017, kiểm tra năm 2017 & 0.684 & 0.563 & 0.618 & 0.684 & 0.837\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\figureplaceholder{tabular/tabular_robustness.png}{Precision, recall, F1 và PR-AUC của mô hình trong bốn cách đánh giá.}
+\caption{PR-AUC trên test giảm từ 0.775 xuống 0.687 khi bỏ hai cột nghi ngờ, và chỉ còn 0.684 khi học trên dữ liệu 2015--2016 để dự đoán năm 2017.}
+\label{fig:tab-robust}
+\end{figure}
+
+Bỏ hai cột nghi ngờ làm PR-AUC giảm từ 0.775 xuống 0.687 và F1 từ 0.707 xuống 0.623. Chia theo thời gian cho PR-AUC 0.684 và F1 0.618,
+so với 0.779 và 0.713 khi chia ngẫu nhiên cùng kích thước; recall giảm mạnh nhất, từ 0.779 xuống 0.563. Một phần lý do là tỷ lệ hủy
+thay đổi theo thời gian (25.2\% ở các booking trước 2017, 32.0\% ở năm 2017), nên ngưỡng học từ dữ liệu cũ bỏ sót nhiều booking hủy hơn.
+Tuy vậy, chọn lại ngưỡng trên dữ liệu trước 2017 (0.323) chỉ nâng recall lên 0.599, và PR-AUC không phụ thuộc ngưỡng cũng giảm,
+nên phần lớn chênh lệch đến từ việc quy luật hủy phòng năm 2017 khác các năm trước. Ngược lại, các phòng cùng đoàn ảnh hưởng nhỏ:
+2361 dòng test (18.5\%) có phòng cùng đoàn ở train hoặc validation, PR-AUC trên nhóm này là 0.798 so với 0.770 ở phần còn lại,
+còn F1 gần như bằng nhau (0.707 và 0.706). Kết quả 0.775 vì vậy nên được hiểu là mức trên; khi dự đoán các booking sắp tới,
+con số gần thực tế hơn là PR-AUC khoảng 0.68--0.69 và F1 khoảng 0.62.
 
 \section{Hình trả lời câu hỏi}
 \textbf{Câu hỏi:} Xử lý mất cân bằng lớp có giúp phát hiện được nhiều booking bị hủy hơn không?
@@ -301,41 +386,46 @@ nên đây là giới hạn của dữ liệu hơn là của mô hình.
 \begin{figure}[H]
 \centering
 \figureplaceholder{tabular/tabular_imbalance.png}{Precision, recall, F1 và PR-AUC của bốn cách xử lý mất cân bằng.}
-\caption{Xử lý mất cân bằng làm recall của lớp hủy tăng từ 0,637 lên 0,856 với class weight và lên 0,770 khi điều chỉnh ngưỡng; điều chỉnh ngưỡng cho F1 cao nhất (0,715) mà không làm giảm PR-AUC.}
+\caption{Xử lý mất cân bằng làm recall của lớp hủy tăng từ 0.637 lên 0.856 với class weight và lên 0.770 khi điều chỉnh ngưỡng; điều chỉnh ngưỡng cho F1 cao nhất (0.715) mà không làm giảm PR-AUC.}
 \label{fig:tab-creative}
 \end{figure}
 
-Có. Khi không xử lý, mô hình bỏ sót 36,3\% số booking bị hủy trong tập validation. Với ngưỡng 0,374, mô hình chỉ bỏ sót 23,0\%
-mà vẫn giữ precision 0,666. Với khách sạn, một cảnh báo nhầm thường chỉ tốn một cuộc gọi xác nhận, còn bỏ sót một booking hủy
+Có. Khi không xử lý, mô hình bỏ sót 36.3\% số booking bị hủy trong tập validation. Với ngưỡng 0.374, mô hình chỉ bỏ sót 23.0\%
+mà vẫn giữ precision 0.666. Với khách sạn, một cảnh báo nhầm thường chỉ tốn một cuộc gọi xác nhận, còn bỏ sót một booking hủy
 có thể khiến một phòng bị bỏ trống, nên đánh đổi một phần precision để có recall cao hơn là hợp lý.
+Hình~\ref{fig:tab-robust} ở mục~\ref{sec:tab-robust} trả lời thêm một câu hỏi thứ hai: kết quả trên test có quá lạc quan không.
 
 \section{Kết luận}
 \begin{enumerate}[leftmargin=1.5cm]
-    \item \textbf{Dòng trùng ảnh hưởng lớn đến mọi con số.} 34.050 dòng trùng, phần lớn là booking đoàn Non Refund bị hủy,
-          làm tỷ lệ hủy tăng từ 27,7\% lên 37,0\%. Nếu không bỏ trùng, nhóm đặt trước 181--365 ngày ở City Hotel hủy 62,7\% thay vì 45,7\%.
-    \item \textbf{Đặt càng sớm càng dễ hủy}: ở City Hotel, từ 10,5\% (đặt trước tối đa 7 ngày) lên 45,7\% (181--365 ngày).
-    \item \textbf{Khách có kế hoạch rõ ràng ít hủy hơn}: một yêu cầu đặc biệt làm tỷ lệ hủy của khách mới giảm từ 34,7\% xuống 23,2\%,
-          khách quen hủy 7,7\% so với 28,5\%, và không booking nào có yêu cầu chỗ đỗ xe bị hủy.
-    \item \textbf{Các cột có sau khi đặt phòng cho kết quả giả}: \texttt{reservation\_status} cho PR-AUC bằng 1,000,
-          còn hai cột có lúc check-in âm thầm nâng PR-AUC từ 0,779 lên 0,793.
-    \item \textbf{Điều chỉnh ngưỡng là cách xử lý mất cân bằng hiệu quả nhất}: recall lớp hủy tăng từ 0,637 lên 0,770,
-          F1 cao nhất (0,715) và PR-AUC không giảm như khi dùng SMOTE.
-    \item \textbf{Mô hình cuối} (HistGradientBoosting tinh chỉnh, ngưỡng 0,364) đạt PR-AUC 0,775, F1 0,707 và recall 0,775 trên tập test,
-          phát hiện 77,5\% số booking bị hủy.
+    \item \textbf{Dòng trùng ảnh hưởng lớn đến mọi con số.} 34\,050 dòng trùng, phần lớn là booking đoàn Non Refund bị hủy,
+          làm tỷ lệ hủy tăng từ 27.7\% lên 37.0\%. Nếu không bỏ trùng, nhóm đặt trước 181--365 ngày ở City Hotel hủy 62.7\% thay vì 45.7\%.
+    \item \textbf{Đặt càng sớm càng dễ hủy}: ở City Hotel, từ 10.5\% (đặt trước tối đa 7 ngày) lên 45.7\% (181--365 ngày).
+    \item \textbf{Khách có kế hoạch rõ ràng ít hủy hơn}: một yêu cầu đặc biệt làm tỷ lệ hủy của khách mới giảm từ 34.7\% xuống 23.2\%,
+          và khách quen hủy 7.7\% so với 28.5\%.
+    \item \textbf{Các cột có sau khi đặt phòng cho kết quả giả}: \texttt{reservation\_status} cho PR-AUC bằng 1.000,
+          còn hai cột có lúc check-in âm thầm nâng PR-AUC từ 0.779 lên 0.793.
+    \item \textbf{Điều chỉnh ngưỡng là cách xử lý mất cân bằng hiệu quả nhất}: recall lớp hủy tăng từ 0.637 lên 0.770,
+          F1 cao nhất (0.715) và PR-AUC không giảm như khi dùng SMOTE.
+    \item \textbf{Mô hình cuối} (HistGradientBoosting tinh chỉnh, ngưỡng 0.364) đạt PR-AUC 0.775, F1 0.707 và recall 0.775 trên tập test,
+          phát hiện 77.5\% số booking bị hủy.
+    \item \textbf{Con số trên là mức lạc quan}: bỏ \texttt{country} và chỗ đỗ xe (có thể chỉ được ghi lúc check-in) thì PR-AUC còn 0.687,
+          còn khi học trên dữ liệu trước 2017 để dự đoán năm 2017 thì chỉ đạt 0.684 so với 0.779 khi chia ngẫu nhiên.
 \end{enumerate}
 
 \section{Hạn chế và hướng phát triển}
 \begin{itemize}[leftmargin=1.5cm]
     \item \textbf{Dữ liệu:} chỉ gồm hai khách sạn ở Bồ Đào Nha với ngày đến từ 2015 đến 2017, nên kết quả chưa chắc áp dụng được
           cho khách sạn ở nơi khác hoặc giai đoạn sau COVID. Dataset không có mã booking nên không phân biệt được dòng nhập trùng
-          với các phòng của cùng một đoàn; quyết định bỏ trùng làm tỷ lệ hủy giảm từ 37,0\% xuống 27,7\%.
-    \item \textbf{Cột \texttt{country}:} có thể được cập nhật lúc check-in. Nếu đúng như vậy, booking bị hủy sẽ thường bị bỏ trống
-          hoặc ghi giá trị mặc định ở cột này, và một phần mức độ quan trọng của nó đến từ đó. Dữ liệu hiện có không đủ để kiểm chứng.
-    \item \textbf{Đánh giá:} dữ liệu được chia ngẫu nhiên chứ không theo thời gian, nên kết quả trên test có thể lạc quan hơn
-          khi dự đoán các booking trong tương lai.
-    \item \textbf{Hướng phát triển:} chia dữ liệu theo thời gian (huấn luyện trên 2015--2016, kiểm tra trên 2017), thử bỏ cột
-          \texttt{country} để kiểm tra rò rỉ, chọn ngưỡng dựa trên chi phí thực tế của phòng trống và cuộc gọi xác nhận,
-          và dùng SMOTENC thay cho SMOTE thông thường.
+          với các phòng của cùng một đoàn; quyết định bỏ trùng làm tỷ lệ hủy giảm từ 37.0\% xuống 27.7\%. Các phòng cùng đoàn còn sót lại
+          chỉ làm PR-AUC cao lên một chút (0.798 so với 0.770).
+    \item \textbf{Cột \texttt{country} và chỗ đỗ xe:} có thể chỉ được ghi đầy đủ lúc check-in (booking thiếu \texttt{country} chỉ hủy 6.3\%,
+          khách PRT hủy 35.8\%, không booking nào có chỗ đỗ xe bị hủy). Dữ liệu không cho biết thời điểm ghi từng cột nên không khẳng định được;
+          nếu có rò rỉ, PR-AUC khi dùng thật gần 0.687 hơn là 0.775.
+    \item \textbf{Đánh giá:} dữ liệu được chia ngẫu nhiên, trong khi tỷ lệ hủy thay đổi theo thời gian (25.2\% trước 2017, 32.0\% năm 2017).
+          Khi dự đoán booking tương lai, PR-AUC chỉ còn 0.684 so với 0.779 khi chia ngẫu nhiên cùng kích thước.
+    \item \textbf{Hướng phát triển:} hỏi khách sạn hoặc tác giả dataset về thời điểm ghi \texttt{country} và số chỗ đỗ xe; chia theo thời gian
+          ngay từ bước chọn mô hình và huấn luyện lại định kỳ khi tỷ lệ hủy thay đổi; chọn ngưỡng dựa trên chi phí thực tế của phòng trống
+          và cuộc gọi xác nhận; dùng SMOTENC thay cho SMOTE thông thường.
 \end{itemize}
 
 \section{Tài liệu tham khảo}

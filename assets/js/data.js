@@ -121,16 +121,16 @@ window.SITE_DATA = {
         url: "https://www.kaggle.com/datasets/pooriamst/metro-interstate-traffic-volume",
         samples: "48,204 hourly records (Oct 2012 – Sep 2018)",
         features: "9 columns: date_time, traffic_volume (target), holiday, temp, rain_1h, snow_1h, clouds_all, weather_main, weather_description",
-        description: "Westbound I-94 traffic volume from MnDOT ATR station 301, with hourly weather and holiday information (CC BY 4.0, originally from the UCI Machine Learning Repository). The data contains duplicated and missing hours, which makes it suitable for practising reindexing, interpolation, outlier detection and categorical encoding."
+        description: "Westbound I-94 traffic volume from MnDOT ATR station 301, with hourly weather and holiday information (CC BY 4.0, originally from the UCI Machine Learning Repository). The data contains duplicated and missing hours, which makes it suitable for practising reindexing, causal gap filling, outlier detection and categorical encoding."
       },
       owner: "Trương Thanh Minh",
       status: "in-progress",
       links: { notebook: "notebooks/timeseries.ipynb", report: "reports/timeseries-report.pdf", video: null },
       results: [
-        { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "131.5" },
-        { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs naive (MAE)", value: "+77.4%" },
+        { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "131.2" },
+        { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs naive (MAE)", value: "+77.5%" },
         { model: "Seasonal naive (same hour last week)", metric: "Test MAE (vehicles/hour)", value: "257.2" },
-        { model: "SARIMAX(3,0,0) + weekly Fourier K=63", metric: "Validation MAE (vehicles/hour)", value: "199.1" }
+        { model: "SARIMAX(3,0,0) + weekly Fourier K=63", metric: "Validation MAE (vehicles/hour)", value: "208.1" }
       ]
     }
   ]
