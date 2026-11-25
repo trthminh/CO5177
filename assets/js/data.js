@@ -114,7 +114,7 @@ window.SITE_DATA = {
       type: "Time series",
       title: "Time Series Analysis and Forecasting",
       summary: "Forecasting hourly traffic volume on Interstate 94 (Minneapolis – St Paul, USA) from history, weather and holidays.",
-      problem: "Time series regression: forecast traffic_volume one hour ahead. Data is split into train/validation/test chronologically (no shuffling); Scikit-learn models using lag features, rolling means, hour/weekday/holiday flags and the previous hour's weather are compared with naive baselines and a SARIMAX model with weekly Fourier terms, using MAE, RMSE and MAPE.",
+      problem: "Time series regression: forecast traffic_volume one hour ahead. Data is split into train/validation/test chronologically (no shuffling); Scikit-learn models using lag features, rolling means, hour/weekday/holiday flags and the previous hour's weather are compared with naive baselines, a linear model with an hour-of-week encoding and a SARIMAX model with weekly Fourier terms, using MAE (with block-bootstrap confidence intervals), a monthly rolling-origin backtest and a 1–24 h horizon experiment.",
       dataset: {
         name: "Metro Interstate Traffic Volume",
         url: "https://www.kaggle.com/datasets/pooriamst/metro-interstate-traffic-volume",
@@ -126,10 +126,12 @@ window.SITE_DATA = {
       status: "in-progress",
       links: { notebook: "notebooks/timeseries.ipynb", report: "reports/timeseries-report.pdf", video: null },
       results: [
-        { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "131.2" },
-        { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs naive (MAE)", value: "+77.5%" },
+        { model: "HistGradientBoosting (tuned), final", metric: "Test MAE (vehicles/hour)", value: "130.8" },
+        { model: "HistGradientBoosting (tuned), final", metric: "Test skill vs same hour last week (MAE)", value: "+49.2%" },
         { model: "Seasonal naive (same hour last week)", metric: "Test MAE (vehicles/hour)", value: "257.2" },
-        { model: "SARIMAX(3,0,0) + weekly Fourier K=63", metric: "Validation MAE (vehicles/hour)", value: "208.1" }
+        { model: "HistGradientBoosting, rolling-origin backtest", metric: "Months beating the weekly baseline", value: "10 / 10" },
+        { model: "HistGradientBoosting, 24 h ahead", metric: "Test MAE (vehicles/hour)", value: "173.8" },
+        { model: "SARIMAX(1,0,0) + weekly Fourier K=63", metric: "Validation MAE (vehicles/hour)", value: "206.3" }
       ]
     }
   ]
