@@ -21,6 +21,7 @@
 \usepackage{enumitem}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage[skins,breakable]{tcolorbox}
 \usepackage{hyperref}
 \usepackage{url}
 
@@ -47,10 +48,14 @@
 \newcommand{\coursename}{Nền tảng lập trình cho phân tích và trực quan dữ liệu}
 \newcommand{\semester}{Học kỳ 261, năm học 2026--2027}
 \newcommand{\groupname}{DataInsight}
+% Members in chapter order. A standalone report bolds its owner, e.g. \renewcommand{\styletimeseries}{\bfseries}
+\newcommand{\styletext}{}
+\newcommand{\styletabular}{}
+\newcommand{\styletimeseries}{}
 \newcommand{\members}{%
-    Trương Thanh Minh & 2580893 & Chuỗi thời gian (Time series)\\
-    Tô Anh Phát & 2580894 & Văn bản (Text)\\
-    Trần Lê Hoàng Long & 2570443 & Dữ liệu bảng (Tabular)\\
+    {\styletext Tô Anh Phát} & {\styletext 2580894} & {\styletext Chương 1: Văn bản (Text)}\\
+    {\styletabular Trần Lê Hoàng Long} & {\styletabular 2570443} & {\styletabular Chương 2: Dữ liệu bảng (Tabular)}\\
+    {\styletimeseries Trương Thanh Minh} & {\styletimeseries 2580893} & {\styletimeseries Chương 3: Chuỗi thời gian (Time series)}\\
 }
 \newcommand{\lecturer}{Lê Thành Sách}
 \newcommand{\landingpage}{https://trthminh.github.io/CO5177/}

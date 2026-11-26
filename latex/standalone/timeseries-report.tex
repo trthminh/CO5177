@@ -4,7 +4,8 @@
 \input{../preamble}
 \renewcommand{\reporttype}{BÁO CÁO BÀI TẬP LỚN}
 \renewcommand{\reportsubtitle}{Phân tích và dự báo chuỗi thời gian}
-\renewcommand{\datafamily}{Chuỗi thời gian (Time series)}
+\renewcommand{\datafamily}{Chương 3: Chuỗi thời gian (Time series)}
+\renewcommand{\styletimeseries}{\bfseries} % bold the owner of this chapter on the cover
 \begin{document}
 \input{../cover}
 \pagenumbering{roman}
@@ -13,5 +14,6 @@
 \endgroup
 \clearpage
 \pagenumbering{arabic}
+\setcounter{chapter}{2} % same numbering as the merged report: text = 1, tabular = 2, time series = 3
 \input{../chapters/timeseries}
 \end{document}
