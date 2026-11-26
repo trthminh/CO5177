@@ -19,9 +19,9 @@ thước đo này, nên kết quả so sánh được với các mô hình học
     \item Tên: UIT-ViSpamReviews, phiên bản 1.
     \item Nguồn: \url{https://github.com/sonlam1102/vispamdetection} (file zip chính thức của tác giả).
     \item Thu thập: review của các sản phẩm bán chạy trên các sàn thương mại điện tử lớn ở Việt Nam, tối đa 15 review cho mỗi sản phẩm.
-          Ba người gán nhãn đã được huấn luyện cùng gán toàn bộ dữ liệu, nhãn cuối lấy theo đa số; hệ số Cohen's kappa là 0,72 (tác vụ 1) và 0,68 (tác vụ 2).
-    \item Kích thước: 19.870 review, 4 cột: \texttt{Rating} (1 đến 5 sao), \texttt{Comment} (nội dung), \texttt{Label} (tác vụ 1) và \texttt{SpamLabel} (tác vụ 2).
-          Tác giả chia sẵn 14.306 review train, 1.590 review dev và 3.974 review test.
+          Ba người gán nhãn đã được huấn luyện cùng gán toàn bộ dữ liệu, nhãn cuối lấy theo đa số; hệ số Cohen's kappa là 0.72 (tác vụ 1) và 0.68 (tác vụ 2).
+    \item Kích thước: 19\,870 review, 4 cột: \texttt{Rating} (1 đến 5 sao), \texttt{Comment} (nội dung), \texttt{Label} (tác vụ 1) và \texttt{SpamLabel} (tác vụ 2).
+          Tác giả chia sẵn 14\,306 review train, 1590 review dev và 3974 review test.
     \item Giấy phép và trích dẫn: CC BY-NC 4.0, dùng cho nghiên cứu. C. Van Dinh, S. T. Luu, A. G.-T. Nguyen,
           \textit{Detecting Spam Reviews on Vietnamese E-commerce Websites}, ACIIDS 2022.
 \end{itemize}
@@ -34,10 +34,10 @@ thước đo này, nên kết quả so sánh được với các mô hình học
 \toprule
 Nhãn & Định nghĩa (bài báo) & Số review & Tỷ lệ\\
 \midrule
-NO-SPAM & Review bình thường & 10.585 & 74,0\%\\
-SPAM-1 & Review giả: khen hoặc chê quá mức, không nói về sản phẩm thật & 195 & 1,4\%\\
-SPAM-2 & Chỉ nói về shop, thương hiệu hoặc việc giao hàng & 1.087 & 7,6\%\\
-SPAM-3 & Không phải review: quảng cáo, ký tự vô nghĩa, chuyện ngoài lề & 2.439 & 17,0\%\\
+NO-SPAM & Review bình thường & 10\,585 & 74.0\%\\
+SPAM-1 & Review giả: khen hoặc chê quá mức, không nói về sản phẩm thật & 195 & 1.4\%\\
+SPAM-2 & Chỉ nói về shop, thương hiệu hoặc việc giao hàng & 1087 & 7.6\%\\
+SPAM-3 & Không phải review: quảng cáo, ký tự vô nghĩa, chuyện ngoài lề & 2439 & 17.0\%\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -56,13 +56,13 @@ tập test chỉ dùng một lần ở bước đánh giá cuối.
 Vấn đề & Quy mô & Cách xử lý\\
 \midrule
 Giá trị thiếu, hai cột nhãn mâu thuẫn & không có & --\\
-Nội dung lặp lại (bỏ qua hoa thường, khoảng trắng) & 121 nội dung (0,6\%) & Giữ nguyên: hầu hết là câu rất ngắn như ``ok''\\
+Nội dung lặp lại (bỏ qua hoa thường, khoảng trắng) & 121 nội dung (0.6\%) & Giữ nguyên: hầu hết là câu rất ngắn như ``ok''\\
 Cùng nội dung nhưng khác nhãn & 7 nội dung (5 nằm trong train, 11 dòng) & Chỉ loại 5 nội dung mâu thuẫn tìm thấy trong train, khỏi tập train\\
-Review test có bản sao trong train & 41 (1,0\% tập test) & Giữ nguyên để so sánh được với bài báo; đo riêng ảnh hưởng trên test\\
-Văn bản chưa ở dạng Unicode NFC & 214 review train (1,5\%) & Chuẩn hóa về NFC\\
+Review test có bản sao trong train & 41 (1.0\% tập test) & Giữ nguyên để so sánh được với bài báo; đo riêng ảnh hưởng trên test\\
+Văn bản chưa ở dạng Unicode NFC & 214 review train (1.5\%) & Chuẩn hóa về NFC\\
 Review rỗng sau khi làm sạch & 50 review train, đều là SPAM-3 & Giữ lại; được nhận ra nhờ đặc trưng ký tự và cột \texttt{is\_empty}\\
-Viết tắt, teencode (``ko'', ``sp'') & 23,6\% review train & Giữ nguyên; thay bằng từ đầy đủ đã được thử và không giúp gì (Bảng~\ref{tab:text-cv})\\
-Không có chữ có dấu & 678 review train (4,7\%) & Giữ nguyên; 382 trong số đó là chuỗi gõ bừa, tiếng Anh hoặc mã số, và 378 là SPAM-3\\
+Viết tắt, teencode (``ko'', ``sp'') & 23.6\% review train & Giữ nguyên; thay bằng từ đầy đủ đã được thử và không giúp gì (Bảng~\ref{tab:text-cv})\\
+Không có chữ có dấu & 678 review train (4.7\%) & Giữ nguyên; 382 trong số đó là chuỗi gõ bừa, tiếng Anh hoặc mã số, và 378 là SPAM-3\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -82,7 +82,7 @@ Nhiều khả năng dữ liệu bị cắt ở 300 ký tự khi thu thập. Revi
 
 \section{Phân tích khám phá (EDA)}
 Cứ 4 review có 1 spam, và SPAM-1 ít hơn NO-SPAM 54 lần, nên cần dùng F1-macro và trọng số lớp.
-93,5\% review chấm 5 sao; 96\% review spam và 93\% review thường đều 5 sao, nên số sao mang rất ít thông tin.
+93.5\% review chấm 5 sao; 96\% review spam và 93\% review thường đều 5 sao, nên số sao mang rất ít thông tin.
 Một nửa số review có tối đa 20 tiếng (17 từ). SPAM-1 dài nhất (trung vị 50 tiếng), còn SPAM-3 trải từ review rỗng đến các tin quảng cáo dài.
 
 \subsection{Câu hỏi 1: Dấu hiệu cách viết nào phân biệt các lớp?}
@@ -92,7 +92,7 @@ Vì vậy mười dấu hiệu đơn giản được đo cho từng lớp (Hình
 \begin{figure}[H]
 \centering
 \figureplaceholder{text/text_signals.png}{Tỷ lệ mỗi lớp có từng dấu hiệu cách viết.}
-\caption{SPAM-3 nổi bật: 28,2\% có tối đa 3 tiếng (NO-SPAM: 2,1\%), 23,2\% không có chữ có dấu (0,9\%), 13,2\% lặp một chữ từ 10 lần trở lên (0,2\%). SPAM-1 hay viết nhiều dòng (39,5\% so với 14,9\%) và ít viết tắt (9,2\% so với 26,6\%). Chữ số xuất hiện đều ở mọi lớp.}
+\caption{SPAM-3 nổi bật: 28.2\% có tối đa 3 tiếng (NO-SPAM: 2.1\%), 23.2\% không có chữ có dấu (0.9\%), 13.2\% lặp một chữ từ 10 lần trở lên (0.2\%). SPAM-1 hay viết nhiều dòng (39.5\% so với 14.9\%) và ít viết tắt (9.2\% so với 26.6\%). Chữ số xuất hiện đều ở mọi lớp.}
 \label{fig:text-signals}
 \end{figure}
 
@@ -111,11 +111,11 @@ các chuỗi 6 tiếng xuất hiện trong ít nhất 10 review khác nhau.
 \begin{figure}[H]
 \centering
 \figureplaceholder{text/text_templates.png}{Chuỗi 6 tiếng dùng chung theo lớp.}
-\caption{48,7\% review SPAM-1 chứa một chuỗi 6 tiếng dùng chung, so với 11,3\% review thường. Phần lớn các chuỗi SPAM-1 dùng nhiều nhất là các đoạn liên tiếp của cùng một văn mẫu (\textit{``... tôi không thể trông đợi gì hơn. Cảm ơn nhà cung cấp ...''}); 41 trong 195 review giả (21\%) dán nguyên một trong hai văn mẫu.}
+\caption{48.7\% review SPAM-1 chứa một chuỗi 6 tiếng dùng chung, so với 11.3\% review thường. Phần lớn các chuỗi SPAM-1 dùng nhiều nhất là các đoạn liên tiếp của cùng một văn mẫu (\textit{``... tôi không thể trông đợi gì hơn. Cảm ơn nhà cung cấp ...''}); 41 trong 195 review giả (21\%) dán nguyên một trong hai văn mẫu.}
 \label{fig:text-templates}
 \end{figure}
 
-\textbf{Từ vựng.} Tập train có 12.307 tiếng khác nhau nhưng 20.412 từ khác nhau, và 64\% số từ chỉ xuất hiện một lần.
+\textbf{Từ vựng.} Tập train có 12\,307 tiếng khác nhau nhưng 20\,412 từ khác nhau, và 64\% số từ chỉ xuất hiện một lần.
 So sánh log-odds trên từ 1-gram và 2-gram khẳng định các chủ đề ở trên: \textit{chưa sử\_dụng} là term đặc trưng nhất của SPAM-2,
 review thường kể trải nghiệm cụ thể, còn các term của SPAM-3 đến từ tin nhắn quảng cáo viết không dấu.
 
@@ -124,7 +124,7 @@ review thường kể trải nghiệm cụ thể, còn các term của SPAM-3 đ
 Mọi phép biến đổi văn bản đều xử lý từng review độc lập và được áp dụng cho cả ba tập qua một hàm duy nhất, \texttt{model\_inputs};
 hàm này cũng được dùng cho review mới. Mọi thống kê (bộ từ vựng và idf của TF-IDF, tham số chuẩn hóa, danh sách giá trị one-hot)
 đều được học bên trong \texttt{Pipeline} với \texttt{ColumnTransformer}, nên chỉ đến từ dữ liệu huấn luyện, kể cả trong kiểm định chéo.
-Dev và test giữ nguyên kích thước (1.590 và 3.974 review); train còn 14.295 review sau khi loại 11 dòng mâu thuẫn nhãn.
+Dev và test giữ nguyên kích thước (1590 và 3974 review); train còn 14\,295 review sau khi loại 11 dòng mâu thuẫn nhãn.
 
 \subsection{Đặc trưng}
 \begin{table}[H]
@@ -149,8 +149,10 @@ Logistic Regression và SVM tuyến tính; hai mô hình sau dùng \texttt{class
 Mô hình học sâu như PhoBERT không được huấn luyện (cần GPU); điểm của chúng lấy từ bài báo. Việc chọn mô hình gồm ba bước:
 \begin{enumerate}[leftmargin=1.5cm]
     \item Bốn cách biểu diễn văn bản nhân ba mô hình, huấn luyện trên train và chấm điểm trên dev, cho cả hai tác vụ (Hình~\ref{fig:text-models}).
-    \item Tập dev chỉ có 25 review SPAM-1, nên chênh lệch nhỏ trên dev có thể chỉ là may rủi. Các lựa chọn tiếp theo (có dùng dấu hiệu không,
-          có dùng số sao không, tham số điều chuẩn $C \in \{0{,}1;\ 0{,}3;\ 1;\ 3\}$, có thay viết tắt không) được quyết định bằng
+          SVM tuyến tính tốt nhất ở cả hai tác vụ nên được chọn.
+    \item Tập dev chỉ có 25 review SPAM-1, nên chênh lệch nhỏ trên dev có thể chỉ là may rủi. Vì vậy dev chỉ dùng để lọc ra 3 biểu diễn đứng đầu
+          của SVM tuyến tính ở mỗi tác vụ. Các lựa chọn còn lại (biểu diễn nào trong 3 biểu diễn đó, có dùng dấu hiệu không,
+          có dùng số sao không, tham số điều chuẩn $C \in \{0.1, 0.3, 1, 3\}$, có thay viết tắt không) được quyết định bằng
           kiểm định chéo phân tầng 3 phần trên tập train (Bảng~\ref{tab:text-cv}).
     \item Pipeline được chọn được huấn luyện lại trên train và dev, rồi đánh giá một lần trên test.
 \end{enumerate}
@@ -158,91 +160,113 @@ Mô hình học sâu như PhoBERT không được huấn luyện (cần GPU); đ
 \begin{figure}[H]
 \centering
 \figureplaceholder{text/text_model_comparison.png}{F1-macro trên dev của mọi cách biểu diễn và mô hình.}
-\caption{Ở tác vụ 1, cách biểu diễn quan trọng hơn mô hình: với SVM tuyến tính, tiếng đạt 78,9, từ 78,8, ký tự 81,7, từ và ký tự 83,1. Tách từ chỉ hơn đếm tiếng tối đa 1,1 điểm (với Logistic Regression), vì 2-gram tiếng đã ghép lại được phần lớn từ ghép; đặc trưng ký tự thêm 2,8 điểm. Ở tác vụ 2, tiếng (73,9) và từ kết hợp ký tự (73,3) gần như bằng nhau.}
+\caption{Ở tác vụ 1, cách biểu diễn quan trọng hơn mô hình: với SVM tuyến tính, tiếng đạt 78.9, từ 78.8, ký tự 81.7, từ và ký tự 83.1. Tách từ chỉ hơn đếm tiếng tối đa 1.1 điểm (với Logistic Regression), vì 2-gram tiếng đã ghép lại được phần lớn từ ghép; đặc trưng ký tự thêm 2.8 điểm. Ở tác vụ 2, tiếng (73.9) và từ kết hợp ký tự (73.3) gần như bằng nhau, nên lựa chọn được để cho kiểm định chéo.}
 \label{fig:text-models}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{F1-macro (\%) kiểm định chéo 3 phần trên train ($C = 0{,}3$, cách biểu diễn tốt nhất của mỗi tác vụ)}
+\caption{F1-macro (\%) của SVM tuyến tính với $C = 0.3$: điểm trên dev (bước 1) và điểm kiểm định chéo 3 phần trên train (bước 2)}
 \label{tab:text-cv}
-\begin{tabular}{lrr}
-\toprule
-Thiết lập & Tác vụ 1 & Tác vụ 2\\
-\midrule
-Chỉ đặc trưng văn bản & 84,1 & 66,0\\
-Thêm 10 dấu hiệu & 84,4 & 68,6\\
-Thêm 10 dấu hiệu và số sao (được chọn) & \textbf{84,4} & \textbf{68,7}\\
-Như trên, thay viết tắt bằng từ đầy đủ & 84,4 & 69,0\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Các dấu hiệu thêm 2,6 điểm ở tác vụ 2 (mô hình theo tiếng, không có đặc trưng ký tự) nhưng chỉ 0,3 điểm ở tác vụ 1,
-nơi n-gram ký tự đã bắt được phần lớn thông tin này. Số sao và việc thay viết tắt chỉ thay đổi tối đa 0,3 điểm,
-nên viết tắt được giữ nguyên. $C = 0{,}3$ tốt nhất cho cả hai tác vụ. Mô hình cuối của tác vụ 1 là từ, ký tự, dấu hiệu và số sao
-với SVM tuyến tính; của tác vụ 2 là tiếng, dấu hiệu và số sao với SVM tuyến tính.
-
-\section{Kết quả và đánh giá}
-\begin{table}[H]
-\centering
-\caption{Kết quả trên tập test (\%); bài báo không báo cáo accuracy của TextCNN, LSTM và GRU}
-\label{tab:text-results}
 \begin{tabular}{lrrrr}
 \toprule
 & \multicolumn{2}{c}{Tác vụ 1} & \multicolumn{2}{c}{Tác vụ 2}\\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
-Mô hình & Accuracy & F1-macro & Accuracy & F1-macro\\
+Thiết lập & Dev & Kiểm định chéo & Dev & Kiểm định chéo\\
 \midrule
-Mốc cơ sở (luôn đoán NO-SPAM) & 72,1 & 41,9 & 72,1 & 21,0\\
-TextCNN / LSTM / GRU (bài báo) & -- & 77,2--77,9 & -- & 64,7--66,6\\
-PhoBERT (bài báo) & 90,0 & \textbf{86,9} & 88,9 & 72,2\\
-TF-IDF, dấu hiệu và SVM tuyến tính (nhóm) & 88,1 & 85,4 & 86,1 & \textbf{74,0}\\
+\multicolumn{5}{l}{\textit{So lại 3 biểu diễn đứng đầu trên dev (có dấu hiệu và số sao)}}\\
+Tiếng 1-2 gram & 78.9 & 81.0 & 73.9 & 68.7\\
+Ký tự 1-5 gram & 81.7 & 83.5 & 70.8 & 69.8\\
+Từ 1-2 gram và ký tự 1-5 gram & 83.1 & \textbf{84.4} & 73.3 & \textbf{71.5}\\
+\midrule
+\multicolumn{5}{l}{\textit{Với từ và ký tự: thêm từng nhóm đặc trưng}}\\
+Chỉ đặc trưng văn bản & & 84.1 & & 71.2\\
+Thêm 10 dấu hiệu & & 84.4 & & 71.5\\
+Thêm 10 dấu hiệu và số sao (được chọn) & & \textbf{84.4} & & \textbf{71.5}\\
+Như trên, thay viết tắt bằng từ đầy đủ & & 84.4 & & 71.4\\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Mô hình tuyến tính đạt F1-macro 85,4 ở tác vụ 1, kém PhoBERT 1,5 điểm và cao hơn các mạng hồi quy, mạng tích chập của bài báo
-7,5 đến 8,2 điểm. Ở tác vụ 2, mô hình đạt 74,0, cao hơn PhoBERT 1,8 điểm, trong khi chỉ cần vài giây huấn luyện trên CPU.
-Điểm của các mô hình học sâu do bài báo tự báo cáo, nhóm không chạy lại. Bỏ 41 review test có bản sao trong train,
-F1-macro chỉ thay đổi tối đa 0,1 điểm (85,3 và 74,0), nên phần trùng này không thổi phồng kết quả.
+Kiểm định chéo đổi lựa chọn của tác vụ 2: tiếng 1-2 gram đứng đầu trên dev (73.9) nhưng thấp nhất khi kiểm định chéo (68.7),
+còn từ kết hợp ký tự đạt 71.5. Kiểm định chéo chấm cả 14\,295 review của train (195 review SPAM-1) thay vì 1590 review của dev
+(25 review SPAM-1), nên đáng tin hơn. Ở tác vụ 1, thứ tự giống dev. Vì vậy cả hai tác vụ dùng từ và ký tự.
+Các dấu hiệu tự định nghĩa thêm 2.6 điểm khi mô hình chỉ dùng tiếng (tác vụ 2: 66.1 lên 68.7), nhưng chỉ 0.3 điểm khi đã có
+n-gram ký tự, vì n-gram ký tự đã bắt được phần lớn thông tin này. Số sao và việc thay viết tắt chỉ thay đổi tối đa 0.1 điểm,
+nên viết tắt được giữ nguyên. $C = 0.3$ tốt nhất ở mọi biểu diễn của cả hai tác vụ. Mô hình cuối của cả hai tác vụ là
+từ 1-2 gram, ký tự 1-5 gram, 10 dấu hiệu và số sao với SVM tuyến tính.
+
+\section{Kết quả và đánh giá}
+\begin{table}[H]
+\centering
+\caption{Kết quả trên tập test (\%), kèm F1-macro trên dev của mô hình của nhóm. Số liệu bài báo lấy từ Bảng 8 của bài báo}
+\label{tab:text-results}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+& \multicolumn{3}{c}{Tác vụ 1} & \multicolumn{3}{c}{Tác vụ 2}\\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Mô hình & Accuracy & F1-macro & F1 dev & Accuracy & F1-macro & F1 dev\\
+\midrule
+Mốc cơ sở (lớp đông nhất) & 72.1 & 41.9 & -- & 72.1 & 21.0 & --\\
+TextCNN (bài báo) & 84.2 & 77.9 & -- & 83.4 & 64.7 & --\\
+LSTM (bài báo) & 83.0 & 77.2 & -- & 83.3 & 66.6 & --\\
+GRU (bài báo) & 83.5 & 77.7 & -- & 82.8 & 66.5 & --\\
+BERT4News (bài báo) & 86.4 & 86.2 & -- & 86.2 & 62.6 & --\\
+PhoBERT (bài báo) & \textbf{90.0} & \textbf{86.9} & -- & \textbf{88.9} & 72.2 & --\\
+Của nhóm (TF-IDF, SVM) & 88.1 & 85.4 & 84.0 & 88.1 & \textbf{76.3} & 74.7\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Mô hình tuyến tính đạt F1-macro 85.4 ở tác vụ 1, cao hơn các mạng hồi quy, mạng tích chập của bài báo 7.5 đến 8.2 điểm,
+nhưng vẫn thấp hơn hai mô hình Transformer: khoảng 0.8 điểm so với BERT4News và 1.5 điểm so với PhoBERT.
+Ở tác vụ 2, mô hình đạt 76.3, cao nhất bảng: hơn PhoBERT khoảng 4 điểm và hơn BERT4News gần 14 điểm, trong khi chỉ cần
+vài giây huấn luyện trên CPU. Accuracy tác vụ 2 thì thấp hơn PhoBERT một chút, vì trọng số lớp đổi một ít độ chính xác ở lớp đông
+NO-SPAM lấy khả năng nhận ra các lớp hiếm. Điểm của các mô hình học sâu do bài báo tự báo cáo, nhóm không chạy lại.
+
+Điểm test cao hơn điểm dev ở cả hai tác vụ (84.0 lên 85.4 và 74.7 lên 76.3). Mô hình chấm trên test đã được học lại trên train và dev,
+tức thêm 1590 review, còn dev nhỏ (25 review SPAM-1) nên điểm dev dao động nhiều hơn. Test không được dùng cho lựa chọn nào trước đó.
+Bỏ 41 review test có bản sao trong train, F1-macro chỉ thay đổi tối đa 0.1 điểm (85.3 và 76.3), nên phần trùng này không thổi phồng kết quả.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{text/text_confusion.png}{Ma trận nhầm lẫn trên tập test.}
-\caption{Tác vụ 1 phát hiện được 80,6\% số spam (precision 77,6\%). Ở tác vụ 2, SPAM-2 là lớp khó nhất (F1 58,6): 123 review SPAM-2 (39\%) bị đoán là NO-SPAM, cũng là lỗi chính của PhoBERT trong bài báo (177 review). SPAM-1 vẫn đạt F1 68,4 dù chỉ có 61 review test.}
+\caption{Tác vụ 1 phát hiện được 80.6\% số spam (precision 77.6\%). Ở tác vụ 2, SPAM-2 là lớp khó nhất (F1 58.8): 115 review SPAM-2 (36\%) bị đoán là NO-SPAM, cũng là lỗi chính của PhoBERT trong bài báo (177 review). SPAM-1 vẫn đạt F1 68.4 dù chỉ có 61 review test.}
 \label{fig:text-confusion}
 \end{figure}
 
-\textbf{Phân tích lỗi.} Ở tác vụ 1, tỷ lệ đoán đúng theo loại review là 91,0\% với NO-SPAM, 88,0\% với SPAM-3, 70,5\% với SPAM-1
-và 65,5\% với SPAM-2. Đọc các review bị đoán sai thấy bốn nguyên nhân:
+\textbf{Phân tích lỗi.} Ở tác vụ 1, tỷ lệ đoán đúng theo loại review là 91.0\% với NO-SPAM, 88.0\% với SPAM-3, 70.5\% với SPAM-1
+và 65.5\% với SPAM-2. Đọc các review bị đoán sai thấy bốn nguyên nhân:
 (1) review SPAM-2 kể chi tiết chuyện giao hàng rồi nhắc qua sản phẩm, đúng ranh giới mờ ở Hình~\ref{fig:text-topics};
 (2) review giả không dùng văn mẫu, đọc như một lời khen bình thường;
 (3) nhãn đáng ngờ, ví dụ \textit{``Đánh giá cho shop 5 sao vì sự nhiệt tình của shop''} được gán NO-SPAM dù chỉ nói về shop,
-phù hợp với hệ số kappa 0,68 đến 0,72 của người gán nhãn;
+phù hợp với hệ số kappa 0.68 đến 0.72 của người gán nhãn;
 (4) review thường viết kiểu ``teen'' với chữ lặp, một dấu hiệu mô hình học được từ spam.
 
 \begin{figure}[H]
 \centering
 \figureplaceholder{text/text_weights.png}{Các từ có trọng số lớn nhất của mô hình tác vụ 1.}
-\caption{Trọng số của mô hình khớp với EDA: \textit{chưa sử\_dụng} và \textit{chưa dùng} đẩy mạnh nhất về phía spam, còn các nhận xét cụ thể về sản phẩm như \textit{hàng tốt}, \textit{chất\_lượng tốt} đẩy về NO-SPAM. Trong các dấu hiệu, độ dài, lặp chữ từ 10 lần, tối đa 3 tiếng và có link có trọng số dương lớn nhất.}
+\caption{Trọng số của mô hình khớp với EDA: \textit{chưa sử\_dụng} và \textit{chưa dùng} đẩy mạnh nhất về phía spam, còn các nhận xét cụ thể về sản phẩm như \textit{hàng tốt}, \textit{chất\_lượng tốt} đẩy về NO-SPAM. Trong các dấu hiệu, độ dài, lặp chữ từ 10 lần, tối đa 3 tiếng và có link có trọng số dương lớn nhất. Trong các chuỗi ký tự, \texttt{j} đẩy mạnh nhất về spam vì tiếng Việt không có chữ j: chữ này có trong 31.2\% review SPAM-3 (chủ yếu là chuỗi gõ bừa) so với 1.4\% review thường; chuỗi ``dấu hai chấm rồi dấu cách'' (danh sách, thông số trong tin quảng cáo) có trong 10.8\% SPAM-1 so với 1.1\% review thường.}
 \label{fig:text-weights}
 \end{figure}
 
 \section{Hình trả lời câu hỏi}
 \textbf{Câu hỏi:} Tách từ có giúp nhiều hơn việc giữ lại thông tin mà bước làm sạch văn bản xóa mất không?
 
-Hình~\ref{fig:text-models} và Bảng~\ref{tab:text-cv} trả lời câu hỏi này. So với đếm tiếng, tách từ chỉ làm F1-macro thay đổi
-tối đa 1,1 điểm. Khôi phục những gì bước làm sạch xóa mất giúp nhiều hơn: n-gram ký tự trên văn bản chưa làm sạch thêm 2,8 điểm
-ở tác vụ 1, và 10 dấu hiệu tự định nghĩa thêm 2,6 điểm ở tác vụ 2. Với review spam tiếng Việt, \emph{cách} một review được viết
+Hình~\ref{fig:text-models} và Bảng~\ref{tab:text-cv} trả lời câu hỏi này. So với đếm tiếng, tách từ chỉ làm F1-macro trên dev thay đổi
+tối đa 1.1 điểm. Khôi phục những gì bước làm sạch xóa mất giúp nhiều hơn: n-gram ký tự trên văn bản chưa làm sạch thêm 2.8 điểm trên dev
+ở tác vụ 1; ở tác vụ 2, 10 dấu hiệu tự định nghĩa thêm 2.6 điểm cho mô hình theo tiếng, và thêm n-gram ký tự còn nâng kiểm định chéo
+từ 68.7 lên 71.5. Với review spam tiếng Việt, \emph{cách} một review được viết
 mang nhiều thông tin không kém các từ mà nó dùng.
 
 \section{Hạn chế và hướng phát triển}
 \begin{itemize}[leftmargin=1.5cm]
-    \item Nhiễu nhãn: độ đồng thuận giữa người gán nhãn là 0,68 đến 0,72 và có 7 nội dung bị gán nhãn mâu thuẫn; một số lỗi trong phần
+    \item Nhiễu nhãn: độ đồng thuận giữa người gán nhãn là 0.68 đến 0.72 và có 7 nội dung bị gán nhãn mâu thuẫn; một số lỗi trong phần
           phân tích lỗi nhiều khả năng là lỗi gán nhãn chứ không phải lỗi mô hình.
     \item SPAM-1 rất ít (195 review train, 61 review test) nên F1 của lớp này dao động mạnh; một phần dữ liệu bị cắt ở 300 ký tự.
-    \item Danh sách viết tắt và các dấu hiệu do nhóm tự định nghĩa; công cụ tách từ sai với văn bản không dấu và khi thiếu dấu câu;
+    \item Danh sách viết tắt, các nhóm chủ đề, các dấu hiệu và ngưỡng của chúng do nhóm tự định nghĩa; công cụ tách từ sai với văn bản không dấu và khi thiếu dấu câu;
           mô hình túi từ không hiểu được ngữ cảnh dài hay giọng mỉa mai.
     \item Chỉ dùng một cách chia dữ liệu của tác giả, và điểm học sâu lấy từ bài báo chứ không chạy trong cùng pipeline.
     \item Hướng phát triển: fine-tune PhoBERT trên cùng dữ liệu đã làm sạch để so sánh công bằng và thử ghép với các dấu hiệu tự định nghĩa;

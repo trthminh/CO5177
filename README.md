@@ -20,8 +20,8 @@ dữ liệu: văn bản (Text), dữ liệu bảng (Tabular) và chuỗi thời 
 
 | Chương | Họ tên | MSSV | Phụ trách |
 |---|---|---|---|
-| 1 | Tô Anh Phát | 2580894 | Text: notebook, report, trang con |
-| 2 | Trần Lê Hoàng Long | 2570443 | Tabular: notebook, report, trang con |
+| 1 | Tô Anh Phát ([GitHub](https://github.com/pattan99)) | 2580894 | Text: notebook, report, trang con |
+| 2 | Trần Lê Hoàng Long ([GitHub](https://github.com/m00nLeo)) | 2570443 | Tabular: notebook, report, trang con |
 | 3 | Trương Thanh Minh ([GitHub](https://github.com/trthminh)) | 2580893 | Time series: notebook, report, trang con |
 
 Thứ tự chương giống với báo cáo tổng hợp (`latex/main.tex`) và landing page.
@@ -35,8 +35,8 @@ Thứ tự chương giống với báo cáo tổng hợp (`latex/main.tex`) và 
 | **Dữ liệu** | [UIT-ViSpamReviews](https://github.com/sonlam1102/vispamdetection), 19 870 review | [Hotel Booking Demand](https://github.com/rfordatascience/tidytuesday/tree/master/data/2020/2020-02-11), 119 390 booking | [Metro Interstate Traffic Volume](https://www.kaggle.com/datasets/pooriamst/metro-interstate-traffic-volume), 48 204 giờ |
 | **Chia tập** | Theo split gốc của tác giả | Ngẫu nhiên phân tầng 70/15/15 | Theo thời gian 70/15/15 |
 | **Metric chính** | Macro F1 | PR-AUC, F1 lớp hủy | MAE (xe/giờ) |
-| **Mô hình cuối** | Linear SVM trên TF-IDF và 10 tín hiệu tự thiết kế | HistGradientBoosting (tuned), ngưỡng 0.364 | HistGradientBoosting (tuned) |
-| **Kết quả trên test** | Task 1: 85.4 (baseline 41.9); task 2: 74.0 | PR-AUC 0.775 (baseline 0.277), F1 0.707 | MAE 130.8, thấp hơn baseline cùng giờ tuần trước 49% |
+| **Mô hình cuối** | Linear SVM trên TF-IDF từ và ký tự, 10 tín hiệu tự thiết kế và số sao | HistGradientBoosting (tuned), ngưỡng 0.364 | HistGradientBoosting (tuned) |
+| **Kết quả trên test** | Task 1: 85.4 (baseline 41.9); task 2: 76.3 | PR-AUC 0.775 (baseline 0.277), F1 0.707 | MAE 130.8, thấp hơn baseline cùng giờ tuần trước 49% |
 | **Trang con** | [text/](https://trthminh.github.io/CO5177/text/) | [tabular/](https://trthminh.github.io/CO5177/tabular/) | [timeseries/](https://trthminh.github.io/CO5177/timeseries/) |
 | **Notebook** | [GitHub](notebooks/text.ipynb) · [Colab](https://colab.research.google.com/github/trthminh/CO5177/blob/main/notebooks/text.ipynb) | [GitHub](notebooks/tabular.ipynb) · [Colab](https://colab.research.google.com/github/trthminh/CO5177/blob/main/notebooks/tabular.ipynb) | [GitHub](notebooks/timeseries.ipynb) · [Colab](https://colab.research.google.com/github/trthminh/CO5177/blob/main/notebooks/timeseries.ipynb) |
 | **Report** | [text-report.pdf](reports/text-report.pdf) | [tabular-report.pdf](reports/tabular-report.pdf) | [timeseries-report.pdf](reports/timeseries-report.pdf) |
